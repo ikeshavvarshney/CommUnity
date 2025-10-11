@@ -96,9 +96,10 @@ const Navbar = () => {
   };
 
   // Handle create post
-  const handleCreatePost = () => {
+  const handleCreatePost =async () => {
     // This would trigger the create post section in main body
     const event = new CustomEvent('openCreatePost');
+    
     window.dispatchEvent(event);
   };
 

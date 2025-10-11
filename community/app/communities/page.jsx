@@ -28,6 +28,7 @@ const samplePosts = [
 export default function CommunityPage() {
   const [posts, setPosts] = useState(samplePosts);
   const [title, setTitle] = useState('');
+  const [token, setToken] = useState('');
   const [content, setContent] = useState('');
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -59,6 +60,11 @@ export default function CommunityPage() {
       }, 100);
     }
   }, [showForm]);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("accToken");
+    setToken(storedToken);
+  }, []);
 
   // Clear success message after 3 seconds
   useEffect(() => {
@@ -136,16 +142,44 @@ export default function CommunityPage() {
     e.preventDefault();
     
     if (!validateForm()) return;
-    
+    if (!token) {
+      setErrors({ submit: 'Authentication token not found. Please login again.' });
+      return;
+    }
+
     setIsSubmitting(true);
     setErrors({});
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Create FormData for multipart/form-data request
+      const formData = new FormData();
+      // formData.append('name', title.trim());
+      // formData.append('description', content.trim());
+      
+      // Append photo file if exists
+      if (photo) {
+        formData.append('file', photo);
+      }
+
+      const response = await fetch("http://localhost:8080/cloud/uploadFile", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // Don't set Content-Type header when using FormData
+          // Browser will set it automatically with boundary
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Community created:', result);
 
       const newPost = {
-        id: Date.now(), // Better ID generation
+        id: Date.now(),
         title: title.trim(),
         content: content.trim(),
         author: 'Anonymous', // Replace with actual user
@@ -154,6 +188,30 @@ export default function CommunityPage() {
         createdAt: new Date().toLocaleString(),
         photoUrl: photoPreview,
       };
+      try{
+        const response1=await fetch("http://localhost:8080/communities/create",{
+          method:"POST",
+          headers:{
+            Authorization:`Bearer ${token}`,
+            "Content-Type":"application/json"
+          },
+          body:JSON.stringify({
+            name:title,
+            description:content,
+            logoUrl:result.url
+          })
+        })
+        const data=await response1.json()
+        if(!response.ok){
+          const errData=data;
+          throw Error(errData)
+        }
+        console.log(data)
+      }
+      catch(e){
+        console.log(e);
+        
+      }
 
       setPosts(prev => [newPost, ...prev]);
       
@@ -163,12 +221,11 @@ export default function CommunityPage() {
       setPhoto(null);
       setPhotoPreview(null);
       setShowForm(false);
-      setSuccessMessage('Post created successfully!');
-
-      // Backend integration would go here
+      setSuccessMessage('Community created successfully!');
       
     } catch (error) {
-      setErrors({ submit: 'Failed to create post. Please try again.' });
+      console.error('Error creating community:', error);
+      setErrors({ submit: 'Failed to create community. Please try again.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -209,7 +266,7 @@ export default function CommunityPage() {
             aria-expanded={showForm}
             aria-controls="create-post-form"
           >
-            {showForm ? '✕ Cancel' : '✏️ Share'}
+            {showForm ? '✕ Cancel' : '✏️ Create'}
           </button>
         </div>
 
@@ -238,11 +295,11 @@ export default function CommunityPage() {
               onSubmit={handleSubmit}
               id="create-post-form"
               className="mb-12 bg-white p-8 rounded-2xl shadow-2xl border-2 border-indigo-200 max-w-4xl mx-auto animate-fade-in-up"
-              aria-label="Create a new post form"
+              aria-label="Create a new community form"
             >
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-2 h-8 bg-indigo-600 rounded-full"></div>
-                <h2 className="text-2xl font-bold text-gray-800">Create a New Post</h2>
+                <h2 className="text-2xl font-bold text-gray-800">Create a New Community</h2>
               </div>
 
               {errors.submit && (
@@ -256,7 +313,7 @@ export default function CommunityPage() {
                   <input
                     ref={titleInputRef}
                     type="text"
-                    placeholder="Enter an engaging title..."
+                    placeholder="Enter Community Name..."
                     value={title}
                     onChange={e => setTitle(e.target.value)}
                     className={`w-full p-4 text-lg border-2 rounded-xl focus:outline-none transition-all ${
@@ -275,7 +332,7 @@ export default function CommunityPage() {
 
                 <div>
                   <textarea
-                    placeholder="Share your thoughts with the community..."
+                    placeholder="Share description of the community..."
                     value={content}
                     onChange={e => setContent(e.target.value)}
                     rows={6}
@@ -291,38 +348,72 @@ export default function CommunityPage() {
                   )}
                 </div>
 
+                {/* Photo Upload Section */}
                 <div>
-                  <label className="block mb-3 font-semibold text-gray-700" htmlFor="photo-upload">
-                    📷 Add a Photo (Optional)
+                  <label className="block text-lg font-medium text-gray-700 mb-2">
+                    Community Logo (Optional)
                   </label>
-                  <input
-                    type="file"
-                    id="photo-upload"
-                    accept="image/*"
-                    onChange={handlePhotoChange}
-                    className="block w-full text-gray-700 border border-gray-300 rounded-lg p-3 hover:border-indigo-400 transition-colors"
-                  />
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-indigo-400 transition-colors">
+                    <div className="space-y-1 text-center">
+                      {photoPreview ? (
+                        <div className="relative">
+                          <img
+                            src={photoPreview}
+                            alt="Preview"
+                            className="mx-auto h-32 w-32 object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPhoto(null);
+                              setPhotoPreview(null);
+                            }}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <svg
+                            className="mx-auto h-12 w-12 text-gray-400"
+                            stroke="currentColor"
+                            fill="none"
+                            viewBox="0 0 48 48"
+                          >
+                            <path
+                              d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          <div className="flex text-sm text-gray-600">
+                            <label
+                              htmlFor="photo-upload"
+                              className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                            >
+                              <span>Upload a photo</span>
+                              <input
+                                id="photo-upload"
+                                name="photo-upload"
+                                type="file"
+                                className="sr-only"
+                                accept="image/*"
+                                onChange={handlePhotoChange}
+                              />
+                            </label>
+                            <p className="pl-1">or drag and drop</p>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            PNG, JPG, GIF up to 5MB
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
                   {errors.photo && (
                     <p className="mt-2 text-sm text-red-600">{errors.photo}</p>
-                  )}
-                  {photoPreview && (
-                    <div className="mt-4 relative inline-block">
-                      <img
-                        src={photoPreview}
-                        alt="Photo preview"
-                        className="max-h-64 rounded-xl object-contain border-2 border-gray-200 shadow-md"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPhoto(null);
-                          setPhotoPreview(null);
-                        }}
-                        className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition-colors"
-                      >
-                        ✕
-                      </button>
-                    </div>
                   )}
                 </div>
               </div>
@@ -340,10 +431,10 @@ export default function CommunityPage() {
                   {isSubmitting ? (
                     <span className="flex items-center justify-center gap-3">
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Publishing...
+                      Creating Community...
                     </span>
                   ) : (
-                    '🚀 Publish Post'
+                    '🚀 Create Community'
                   )}
                 </button>
                 <button
