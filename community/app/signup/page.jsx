@@ -1,40 +1,137 @@
-// pages/register.jsx
+"use client"
+import { useState } from 'react';
 import Link from 'next/link';
 
+import { toast } from 'react-toastify';
+
 export default function Register() {
+  const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = async(e) => {
+    e.preventDefault();
+    try{
+      const response=await fetch(`http://localhost:8080/user/register`,{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          username:username,
+          firstName:firstName,
+          lastName:lastName,
+          email:email,
+          password:password
+        })
+      })
+      const data = await response.json();
+
+if (!response.ok) {
+  toast.error(data.message || "Something went wrong");
+  console.log("CHECKING IF ITS PRINTING");
+  throw new Error(data.message || "Something went wrong");
+}
+
+console.log(data);
+toast.success("Register Successfully");
+localStorage.setItem("accToken", data.token);
+    }
+    catch(e){
+      console.log(e)
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8 p-8 border border-gray-200 rounded-lg shadow-sm">
         <h2 className="text-center text-3xl font-extrabold text-gray-900">Create your account</h2>
-        <form className="mt-8 space-y-6" action="#" method="POST">
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+
           <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="name" className="sr-only">Full Name</label>
+
+            <div className="pt-4">
+              <label htmlFor="username" className="sr-only">Username</label>
               <input
-                id="name" name="name" type="text" autoComplete="name" required
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400
                            focus:outline-none focus:ring-[#2E4156] focus:border-[#2E4156] focus:z-10 sm:text-sm"
-                placeholder="Full Name"
+                placeholder="Username"
               />
             </div>
+
+            <div className="pt-4">
+              <label htmlFor="firstName" className="sr-only">First Name</label>
+              <input
+                id="firstName"
+                name="firstName"
+                type="text"
+                autoComplete="given-name"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400
+                           focus:outline-none focus:ring-[#2E4156] focus:border-[#2E4156] focus:z-10 sm:text-sm"
+                placeholder="First Name"
+              />
+            </div>
+
+            <div className="pt-4">
+              <label htmlFor="lastName" className="sr-only">Last Name</label>
+              <input
+                id="lastName"
+                name="lastName"
+                type="text"
+                autoComplete="family-name"
+                required
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400
+                           focus:outline-none focus:ring-[#2E4156] focus:border-[#2E4156] focus:z-10 sm:text-sm"
+                placeholder="Last Name"
+              />
+            </div>
+
             <div className="pt-4">
               <label htmlFor="email" className="sr-only">Email address</label>
               <input
-                id="email" name="email" type="email" autoComplete="email" required
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400
                            focus:outline-none focus:ring-[#2E4156] focus:border-[#2E4156] focus:z-10 sm:text-sm"
                 placeholder="Email address"
               />
             </div>
+
             <div className="pt-4">
               <label htmlFor="password" className="sr-only">Password</label>
               <input
-                id="password" name="password" type="password" autoComplete="new-password" required
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-400
                            focus:outline-none focus:ring-[#2E4156] focus:border-[#2E4156] focus:z-10 sm:text-sm"
                 placeholder="Password"
               />
             </div>
+
           </div>
 
           <div>
