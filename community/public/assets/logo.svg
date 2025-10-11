@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 40 535 140" width="535" height="140">
+  <defs>
+    <!-- gradient for brand colors -->
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06D6A0"/>
+      <stop offset="50%" stop-color="#118AB2"/>
+      <stop offset="100%" stop-color="#9B5DE5"/>
+    </linearGradient>
+
+    <!-- inner soft glow -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- creative square icon -->
+  <g transform="translate(100,110)">
+    <!-- rounded gradient square -->
+    <rect x="-70" y="-70" width="140" height="140" rx="32" ry="32" fill="url(#grad1)" filter="url(#glow)"/>
+
+    <!-- inner “connection swirl” -->
+    <path d="M-30,-18
+             Q0,-60 30,-18
+             Q60,0 30,18
+             Q0,60 -30,18
+             Q-60,0 -30,-18Z"
+          fill="none" stroke="white" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+
+    <!-- central dot -->
+    <circle cx="0" cy="0" r="9" fill="white" opacity="0.95"/>
+  </g>
+
+  <!-- text -->
+  <text x="190" y="130" font-family="Poppins, Arial, sans-serif" font-size="64" font-weight="700" fill="#222">
+    Comm<tspan fill="url(#grad1)">Unity</tspan>
+  </text>
+
+  <!-- tagline -->
+  <text x="200" y="160" font-family="Poppins, Arial, sans-serif" font-size="20" fill="#666">
+    Connect • Collaborate • Create
+  </text>
+</svg>
