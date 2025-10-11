@@ -2,7 +2,7 @@ import Link from 'next/link';
 import React from 'react';
 
 const Navbar = () => (
-  <nav className="flex items-center justify-between px-4 py-2.5 bg-white shadow-sm border-b border-gray-200">
+  <nav className="flex items-center justify-between px-4 py-2.5 sticky top-0 bg-white shadow-sm border-b border-gray-200">
     <div className="flex items-center gap-3">
       <img src="/assets/logo.svg" alt="CommUnity Logo" width="180" />
     </div>
@@ -14,13 +14,18 @@ const Navbar = () => (
         </Link>
       </li>
       <li>
+        <Link className="px-4 py-2 rounded-md text-gray-700 font-medium hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#2E4156]" href="/communities">
+          Communities
+        </Link>
+      </li>
+      <li>
         <Link className="px-4 py-2 rounded-md text-gray-700 font-medium hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#2E4156]" href="/about">
           About
         </Link>
       </li>
       <li>
-        <Link className="px-4 py-2 rounded-md text-gray-700 font-medium hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#2E4156]" href="/contact">
-          Contact
+        <Link className="px-4 py-2 rounded-md text-gray-700 font-medium hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#2E4156]" href="/events">
+          Events
         </Link>
       </li>
     </ul>
