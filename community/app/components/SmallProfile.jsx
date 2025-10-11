@@ -14,15 +14,11 @@ const SmallProfile = ({ profilePic, username, bio, about, profileViews, postView
           <span className="block text-gray-600 text-sm truncate max-w-xs">{bio}</span>
         </div>
       </div>
-      <div className="mb-4 text-gray-700 text-sm leading-relaxed whitespace-normal max-h-20 overflow-hidden">
+      <div className="mb-4 text-gray-700 text-sm leading-relaxed whitespace-normal max-h-22 overflow-hidden">
         {about}
       </div>
-      <div className="border-t border-gray-200 pt-4 flex justify-between text-gray-600 text-sm">
-        <div className="flex flex-col items-center flex-1 border-r border-gray-200 pr-4">
-          <span className="font-semibold text-gray-900">{profileViews}</span>
-          <span>Profile Views</span>
-        </div>
-        <div className="flex flex-col items-center flex-1 pl-4">
+      <div className="border-t border-gray-200 pt-4 text-gray-600 text-sm">
+        <div className="">
           <span className="font-semibold text-gray-900">{postViews}</span>
           <span>Post Views This Month</span>
         </div>
