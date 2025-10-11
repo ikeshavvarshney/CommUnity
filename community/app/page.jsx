@@ -1,4 +1,6 @@
+'use client'
 import Link from "next/link";
+import { useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Post from "./components/Post";
 import EventsSection from "./components/EventsSection";
@@ -22,22 +24,31 @@ export default function Home() {
     location: 'Downtown Co-working Space',
   },
 ];
+  useEffect(() => {
+    const handleOpenCreatePost = () => {
+      // Open your create post section
+    };
+    window.addEventListener('openCreatePost', handleOpenCreatePost);
+    return () => window.removeEventListener('openCreatePost', handleOpenCreatePost);
+  }, []);
+
   return (
    <div>
      <Navbar />
-     <main className="flex px-8 justify-between gap-6 mt-6">
-      <div className="flex-col">
-        <h1>profile</h1>
+     <main className="flex px-8 justify-between gap-5 mt-6">
+      <div className="flex-col max-w-80">
+        <h2 className="px-1 text-lg font-bold">Profile</h2>
         <Link href="../profile">
           <SmallProfile
             profilePic="https://randomuser.me/api/portraits/women/44.jpg"
             username="Jane Doe"
             bio="Full-stack developer, music lover, and tech enthusiast."
+            about='Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
           />
         </Link>
       </div>
       <div className="flex-col">
-        <h1>feed</h1>
+        <h2 className="px-1 text-lg font-bold">Feed</h2>
         <Post 
           title="Introducing Our New Feature" 
           author="Jane Doe" 
@@ -47,8 +58,7 @@ export default function Home() {
         />
       </div>
       <div className="flex-col">
-        <h1>messages</h1>
-       <h2 style={{ textAlign: 'center', margin: '30px 0' }}>Upcoming Events</h2>
+       <h2 className="px-1 text-lg font-bold">Upcoming Events</h2>
       <EventsSection events={exampleEvents} />
       </div>
 

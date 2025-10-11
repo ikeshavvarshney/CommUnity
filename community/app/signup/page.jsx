@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'react-toastify';
+import { useRouter } from 'next/navigation';
 
 export default function Register() {
   const [username, setUsername] = useState('');
@@ -9,7 +10,7 @@ export default function Register() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
+  const router=useRouter()
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -36,6 +37,8 @@ export default function Register() {
 
       toast.success('Registered Successfully');
       localStorage.setItem('accToken', data.token);
+      router.push("/")
+
     } catch (e) {
       console.error(e);
     }
