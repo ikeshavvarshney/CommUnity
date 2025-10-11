@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import Particles from "react-tsparticles";
-import { loadFull } from "tsparticles";
 
 export default function CommunityPage() {
   const [isMember, setIsMember] = useState(false);
@@ -13,6 +11,8 @@ export default function CommunityPage() {
     members: 1284,
     description:
       "Welcome to EcoWarriors 🌿 — a community of nature lovers, environmental activists, and sustainability enthusiasts working together to make a greener planet. Share your projects, tips, and eco-friendly ideas!",
+    coverImage:
+      "https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1470&q=80",
     posts: [
       {
         id: 1,
@@ -47,38 +47,17 @@ export default function CommunityPage() {
 
   const handleJoin = () => setIsMember(!isMember);
 
-  const particlesInit = useCallback(async (engine) => {
-    await loadFull(engine);
-  }, []);
-
   return (
     <div className="max-w-7xl mx-auto mt-6 p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* Main Content */}
       <div className="md:col-span-2 space-y-6">
-        {/* Particle Cover */}
+        {/* Cover Image */}
         <div className="relative w-full h-48 rounded-xl overflow-hidden shadow-md">
-          <Particles
-            id="tsparticles"
-            init={particlesInit}
-            options={{
-              background: { color: { value: "#ffffff" } },
-              fpsLimit: 60,
-              interactivity: {
-                events: { onHover: { enable: true, mode: "repulse" }, resize: true },
-              },
-              particles: {
-                color: { value: "#10B981" },
-                links: { enable: true, color: "#10B981", distance: 150 },
-                move: { enable: true, speed: 2, outModes: "bounce" },
-                number: { value: 50 },
-                opacity: { value: 0.6 },
-                shape: { type: "circle" },
-                size: { value: { min: 2, max: 4 } },
-              },
-            }}
-            className="absolute inset-0"
+          <img
+            src={community.coverImage}
+            alt={`Cover for r/${community.name}`}
+            className="w-full h-full object-cover"
           />
-
           <div className="absolute bottom-4 left-6 bg-white bg-opacity-80 rounded-md px-4 py-2">
             <h1 className="text-2xl font-bold text-gray-800">r/{community.name}</h1>
             <p className="text-sm text-gray-600">
