@@ -1,4 +1,6 @@
+'use client'
 import Link from "next/link";
+import { useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Post from "./components/Post";
 import EventsSection from "./components/EventsSection";
@@ -22,6 +24,14 @@ export default function Home() {
     location: 'Downtown Co-working Space',
   },
 ];
+  useEffect(() => {
+    const handleOpenCreatePost = () => {
+      // Open your create post section
+    };
+    window.addEventListener('openCreatePost', handleOpenCreatePost);
+    return () => window.removeEventListener('openCreatePost', handleOpenCreatePost);
+  }, []);
+
   return (
    <div>
      <Navbar />
