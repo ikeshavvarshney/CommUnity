@@ -2,10 +2,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'react-toastify';
+import { useRouter } from 'next/navigation';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
+  const router=useRouter()
   const handleSubmit = async(e) => {
     e.preventDefault();
     try{
@@ -25,18 +26,26 @@ export default function Login() {
         const errData=data.message;
         throw  Error(errData)
       }
+      router.push("/")
+
       console.log(data)
       toast.success("Login sucessfully")
+      localStorage.setItem("accToken",data.token)
     }
     catch(e){
       console.log(e)
     }
-    console.log({ email, password });
   };
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-4">
       <div className="max-w-md w-full space-y-8 p-8 border border-gray-200 rounded-lg shadow-sm">
+      <img
+        src="/assets/logo.svg"
+        alt="CommUnity Logo"
+        width={200}
+        className="mb-8"
+      />
         <h2 className="text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
@@ -84,7 +93,7 @@ export default function Login() {
         </form>
         <p className="mt-4 text-center text-sm text-gray-600">
           Don't have an account?{' '}
-          <Link href="/register" className="font-medium text-[#2E4156] hover:text-[#1A2D42]">
+          <Link href="/signup" className="font-medium text-[#2E4156] hover:text-[#1A2D42]">
             Register
           </Link>
         </p>
