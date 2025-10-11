@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Navbar from "./components/Navbar";
 import Post from "./components/Post";
 import EventsSection from "./components/EventsSection";
@@ -27,11 +28,13 @@ export default function Home() {
      <main className="flex px-8 justify-between gap-6 mt-6">
       <div className="flex-col">
         <h1>profile</h1>
-        <SmallProfile
-      profilePic="https://randomuser.me/api/portraits/women/44.jpg"
-      username="Jane Doe"
-      bio="Full-stack developer, music lover, and tech enthusiast."
-    />
+        <Link href="../profile">
+          <SmallProfile
+            profilePic="https://randomuser.me/api/portraits/women/44.jpg"
+            username="Jane Doe"
+            bio="Full-stack developer, music lover, and tech enthusiast."
+          />
+        </Link>
       </div>
       <div className="flex-col">
         <h1>feed</h1>
