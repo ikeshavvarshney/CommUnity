@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import Navbar from "../components/Navbar";
 
-export default function CommunityPage() {
+export default function CommunityDesc() {
   const [isMember, setIsMember] = useState(false);
 
   const community = {
@@ -48,6 +49,8 @@ export default function CommunityPage() {
   const handleJoin = () => setIsMember(!isMember);
 
   return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
     <div className="max-w-7xl mx-auto mt-6 p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* Main Content */}
       <div className="md:col-span-2 space-y-6">
@@ -87,7 +90,7 @@ export default function CommunityPage() {
               <motion.div
                 key={post.id}
                 className="border border-gray-200 rounded-lg p-4 cursor-pointer"
-                whileHover={{ scale: 1.03, boxShadow: "0px 10px 20px rgba(0,0,0,0.1)" }}
+                whileHover={{ scale: 1.005, boxShadow: "0px 10px 20px rgba(0,0,0,0.1)" }}
                 whileTap={{ scale: 0.97 }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -131,6 +134,7 @@ export default function CommunityPage() {
           </ul>
         </div>
       </div>
+    </div>
     </div>
   );
 }
