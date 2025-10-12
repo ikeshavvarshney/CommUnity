@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
 // Community Card Component
-function CommunityCard({ community , onClick}) {
-  const router=useRouter()
+function CommunityCard({ community, onClick }) {
+  const router = useRouter();
+  
   const getRoleBadgeStyle = (role) => {
     switch (role) {
       case 'ADMIN':
@@ -20,10 +21,11 @@ function CommunityCard({ community , onClick}) {
   };
 
   return (
-<div
-  onClick={onClick}
-  className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group cursor-pointer"
->      <div className="p-6">
+    <div
+      onClick={onClick}
+      className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group cursor-pointer"
+    >
+      <div className="p-6">
         <div className="flex items-start space-x-4">
           {/* Community Logo */}
           <div className="flex-shrink-0">
@@ -103,6 +105,300 @@ function CommunityCardSkeleton() {
   );
 }
 
+// Create Community Modal Component
+function CreateCommunityModal({ isOpen, onClose, onSubmit }) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [image, setImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [logoUrl, setLogoUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [token, setToken] = useState('');
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("accToken");
+    setToken(storedToken || '');
+  }, []);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImage(file);
+      setImagePreview(URL.createObjectURL(file));
+      setLogoUrl(''); // Reset logo URL when new file is selected
+    }
+  };
+
+  const uploadImageToCloud = async () => {
+    if (!image || !token) {
+      return null;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', image);
+
+      const response = await fetch(`http://localhost:8080/cloud/uploadFile`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Community logo uploaded:', result);
+      
+      // Assuming the API returns the image URL directly or in a specific field
+      const uploadedImageUrl = result.url
+      setLogoUrl(uploadedImageUrl);
+      
+      return uploadedImageUrl;
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast.error('Failed to upload community logo');
+      return null;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const createCommunityWithData = async (communityLogoUrl) => {
+    if (!token) {
+      toast.error('Authentication token not found');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8080/communities/create`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim(),
+          logoUrl: communityLogoUrl || ''
+        })
+      });
+
+      const data = await response.text();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create community');
+      }
+
+      console.log('Community created:', data);
+      toast.success('Community created successfully!');
+      
+      // Create local community data for immediate UI update
+      const localCommunityData = {
+        id: data.id || Date.now(),
+        name: name.trim(),
+        description: description.trim(),
+        logoUrl: communityLogoUrl || '',
+        role: 'ADMIN', // Creator becomes admin
+        createdAt: new Date().toISOString(),
+      };
+      
+      // Call the parent's onSubmit to update the UI
+      await onSubmit(localCommunityData);
+      
+      return data;
+    } catch (error) {
+      console.error('Community creation error:', error);
+      toast.error(error.message || 'Failed to create community');
+      throw error;
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!name.trim() || !description.trim()) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      let finalLogoUrl = '';
+      
+      // Step 1: Upload image if one is selected
+      if (image) {
+        finalLogoUrl = await uploadImageToCloud();
+        if (image && !finalLogoUrl) {
+          // Image upload failed, don't proceed
+          toast.error('Please try uploading the logo again');
+          return;
+        }
+      }
+
+      // Step 2: Create community with the logo URL (or empty string if no logo)
+      await createCommunityWithData(finalLogoUrl);
+
+      // Reset form on success
+      setName('');
+      setDescription('');
+      setImage(null);
+      setImagePreview(null);
+      setLogoUrl('');
+      onClose();
+      
+    } catch (error) {
+      // Error handling is done in the individual functions
+      console.error('Submit error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const removeImage = () => {
+    setImage(null);
+    setImagePreview(null);
+    setLogoUrl('');
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="bg-indigo-600 px-6 py-4 rounded-t-2xl">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white">Create New Community</h2>
+            <button
+              onClick={onClose}
+              className="text-white hover:text-gray-200 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Community Name Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Community Name *
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+              placeholder="Enter a name for your community..."
+              required
+            />
+          </div>
+
+          {/* Community Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description *
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
+              placeholder="Describe what your community is about..."
+              required
+            />
+          </div>
+
+          {/* Community Logo Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Community Logo
+            </label>
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center transition-colors hover:border-gray-400 relative">
+              {imagePreview ? (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Logo Preview"
+                    className="max-h-32 mx-auto rounded-lg object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    disabled={isUploadingImage}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  {isUploadingImage && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                      <div className="text-white text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                        <p>Uploading...</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <p className="mb-2 text-gray-600">Click to upload or drag and drop</p>
+                  <p className="text-sm text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                disabled={isUploadingImage}
+              />
+            </div>
+          </div>
+
+          {/* Submit Buttons */}
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || isUploadingImage || !name.trim() || !description.trim()}
+              className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Creating...
+                </div>
+              ) : (
+                'Create Community'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // Main Community Dashboard Component
 export default function CommunityDashboard() {
   const [communities, setCommunities] = useState([]);
@@ -110,9 +406,11 @@ export default function CommunityDashboard() {
   const [error, setError] = useState('');
   const [token, setToken] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const router=useRouter()
-  function handleClick(id){
-    router.push(`/communityPost/${id}`)
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const router = useRouter();
+
+  function handleClick(id) {
+    router.push(`/communityPost/${id}`);
   }
 
   // Initialize token from localStorage
@@ -151,7 +449,7 @@ export default function CommunityDashboard() {
 
         // Handle both array and single object responses
         const communitiesArray = Array.isArray(data) ? data : [data];
-        console.log(communitiesArray)
+        console.log(communitiesArray);
         setCommunities(communitiesArray);
         
         if (communitiesArray.length > 0) {
@@ -176,6 +474,13 @@ export default function CommunityDashboard() {
     community.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Handle create community
+  const handleCreateCommunity = async (communityData) => {
+    setCommunities([communityData, ...communities]);
+    // Optionally refetch communities to get the complete data
+    // You can call the fetch function here if needed
+  };
+
   // Retry function
   const handleRetry = () => {
     const storedToken = localStorage.getItem("accToken");
@@ -198,7 +503,10 @@ export default function CommunityDashboard() {
                 <p className="mt-2 text-gray-600">Manage and view all your communities in one place</p>
               </div>
               <div className="mt-4 sm:mt-0">
-                <button className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
+                <button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
@@ -276,7 +584,10 @@ export default function CommunityDashboard() {
                 </div>
                 <h3 className="text-xl font-medium text-gray-900 mb-2">No Communities Found</h3>
                 <p className="text-gray-600 mb-6">You haven't joined any communities yet. Create your first community to get started!</p>
-                <button className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
+                <button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
@@ -290,9 +601,13 @@ export default function CommunityDashboard() {
         {/* Communities Grid */}
         {!loading && !error && filteredCommunities.length > 0 && (
           <>
-            <div    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCommunities.map(community => (
-                <CommunityCard onClick={()=> handleClick(community.id)} key={community.id} community={community} />
+                <CommunityCard 
+                  onClick={() => handleClick(community.id)} 
+                  key={community.id} 
+                  community={community} 
+                />
               ))}
             </div>
             
@@ -331,6 +646,13 @@ export default function CommunityDashboard() {
           </div>
         )}
       </div>
+
+      {/* Create Community Modal */}
+      <CreateCommunityModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateCommunity}
+      />
     </div>
   );
 }
