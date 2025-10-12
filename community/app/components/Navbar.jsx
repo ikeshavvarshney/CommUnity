@@ -1,14 +1,13 @@
-
 'use client';
 
 import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
 
-const Navbar = () => {
+const Navbar = ({ profilePic, username, firstName, lastName }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [isSignedIn, setIsSignedIn] = useState(true); // Toggle this to test both states
+  const [isSignedIn, setIsSignedIn] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -17,16 +16,26 @@ const Navbar = () => {
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
 
-  // Sample user data
-  const currentUser = {
-    id: 1,
-    username: "john_doe",
-    firstName: "John",
-    lastName: "Doe",
-    profilePic: "/assets/profile-avatar.jpg",
-    email: "john.doe@example.com"
+  // Generate initials from firstName and lastName
+  const getInitials = () => {
+    if (firstName && lastName) {
+      return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+    } else if (username) {
+      return username.slice(0, 2).toUpperCase();
+    }
+    return 'YV'; // Default fallback
   };
 
+  // Get display name
+  const getDisplayName = () => {
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    } else if (username) {
+      return username;
+    }
+    return 'User';
+  };
+  
   // Sample notification data
   const sampleNotifications = [
     {
@@ -87,6 +96,7 @@ const Navbar = () => {
       if (!res.ok) throw new Error('Search failed');
       const data = await res.json();
       setResults(data);
+      console.log(data)
     } catch (err) {
       console.error(err);
       setResults([]);
@@ -96,10 +106,9 @@ const Navbar = () => {
   };
 
   // Handle create post
-  const handleCreatePost =async () => {
+  const handleCreatePost = async () => {
     // This would trigger the create post section in main body
     const event = new CustomEvent('openCreatePost');
-    
     window.dispatchEvent(event);
   };
 
@@ -122,6 +131,15 @@ const Navbar = () => {
         notif.id === notificationId ? { ...notif, read: true } : notif
       )
     );
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    if (window.confirm("Are you sure you want to sign out?")) {
+      localStorage.removeItem("accToken");
+      setIsSignedIn(false);
+      window.location.href = "/login";
+    }
   };
 
   // Hide dropdowns when clicking outside
@@ -179,19 +197,28 @@ const Navbar = () => {
           {query && (
             <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg mt-2 w-full max-h-64 overflow-y-auto">
               {loading ? (
-                <p className="px-4 py-3 text-gray-500 text-sm">Searching...</p>
+                <p  className="px-4 py-3 text-gray-500 text-sm">Searching...</p>
               ) : results.length > 0 ? (
                 results.map((user) => (
                   <Link
-                    key={user.id}
                     href={`/profile/${user.id}`}
+                    key={user.id}
                     className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-all border-b border-gray-100 last:border-b-0"
                   >
-                    <img
-                      src={user.profilePic || '/assets/default-avatar.png'}
-                      alt={user.username}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
-                    />
+                    {user.profilePic ? (
+                      <img
+                        src={user.profilePic}
+                        alt={user.username}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
+                        {user.firstName && user.lastName 
+                          ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`
+                          : user.username?.slice(0, 2) || 'U'
+                        }
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm font-semibold text-gray-800">{user.username}</p>
                       <p className="text-xs text-gray-500">
@@ -273,7 +300,7 @@ const Navbar = () => {
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors $${
+                          className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
                             !notification.read ? 'bg-blue-50' : ''
                           }`}
                           onClick={() => markAsRead(notification.id)}
@@ -353,11 +380,22 @@ const Navbar = () => {
                 onClick={toggleProfile}
                 className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-colors"
               >
-                <img
-                  src={currentUser.profilePic || '/assets/default-avatar.png'}
-                  alt={currentUser.username}
-                  className="w-full h-full object-cover"
-                />
+                {profilePic ? (
+                  <img
+                    src={profilePic}
+                    alt={getDisplayName()}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div 
+                  className={`w-full h-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm ${profilePic ? 'hidden' : 'flex'}`}
+                >
+                  {getInitials()}
+                </div>
               </button>
             </div>
           </div>
@@ -376,17 +414,27 @@ const Navbar = () => {
           <div className="absolute right-0 top-0 h-full w-80 bg-white shadow-xl">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center gap-4">
-                <img
-                  src={currentUser.profilePic || '/assets/default-avatar.png'}
-                  alt={currentUser.username}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                />
+                {profilePic ? (
+                  <img
+                    src={profilePic}
+                    alt={getDisplayName()}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div 
+                  className={`w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-xl border-2 border-gray-200 ${profilePic ? 'hidden' : 'flex'}`}
+                >
+                  {getInitials()}
+                </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800">
-                    {currentUser.firstName} {currentUser.lastName}
+                    {getDisplayName()}
                   </h3>
-                  <p className="text-sm text-gray-500">@{currentUser.username}</p>
-                  <p className="text-sm text-gray-500">{currentUser.email}</p>
+                  <p className="text-sm text-gray-500">@{username || 'user'}</p>
                 </div>
               </div>
             </div>
@@ -395,7 +443,7 @@ const Navbar = () => {
               <ul className="space-y-2">
                 <li>
                   <Link
-                    href={`/userprofile`}
+                    href="/userprofile"
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -406,7 +454,7 @@ const Navbar = () => {
                 </li>
                 <li>
                   <Link
-                    href={`/messages`}
+                    href="/messages"
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -430,11 +478,7 @@ const Navbar = () => {
 
               <div className="mt-8 pt-4 border-t border-gray-200">
                 <button
-                  onClick={() => {
-                    if (window.confirm("Are you sure you want to sign out?")) {
-                      setIsSignedIn(false);
-                    }
-                  }}
+                  onClick={handleLogout}
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 transition-colors text-red-600 w-full"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

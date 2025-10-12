@@ -160,8 +160,8 @@ export default function Home() {
 
   return (
     <div>
-      <Navbar />
-      <main className="flex px-8 justify-between gap-5 mt-6">
+<Navbar profilePic={getProfileImage()} />
+<main className="flex px-8 justify-between gap-5 mt-6">
         <div className="flex-col max-w-80">
           <h2 className="px-1 text-lg font-bold">Profile</h2>
           <Link href="../userprofile">
