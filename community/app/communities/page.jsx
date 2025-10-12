@@ -1,585 +1,327 @@
 "use client";
-import { useState, useMemo, useRef, useEffect } from 'react';
-import Navbar from '../components/Navbar';
+import { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 
-const samplePosts = [
-  {
-    id: 1,
-    title: 'Welcome to the Community!',
-    content: 'This is a sample post content. Connect, share, and discuss here.',
-    author: 'User123',
-    votes: 12,
-    comments: 4,
-    createdAt: '2025-10-10 14:20',
-    photoUrl: null,
-  },
-  {
-    id: 2,
-    title: 'How to use Next.js with Tailwind CSS?',
-    content: 'Looking for best practices for integrating Tailwind CSS in Next.js projects.',
-    author: 'DevGuru',
-    votes: 18,
-    comments: 7,
-    createdAt: '2025-10-11 09:42',
-    photoUrl: 'https://via.placeholder.com/400x250?text=Tailwind+CSS',
-  },
-];
-
-export default function CommunityPage() {
-  const [posts, setPosts] = useState(samplePosts);
-  const [title, setTitle] = useState('');
-  const [token, setToken] = useState('');
-  const [content, setContent] = useState('');
-  const [photo, setPhoto] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState('');
-  const [votingStates, setVotingStates] = useState({});
-
-  const formRef = useRef(null);
-  const titleInputRef = useRef(null);
-
-  // Auto-focus title input when form opens
-  useEffect(() => {
-    if (showForm && titleInputRef.current) {
-      titleInputRef.current.focus();
-    }
-  }, [showForm]);
-
-  // Scroll to form when it opens
-  useEffect(() => {
-    if (showForm && formRef.current) {
-      setTimeout(() => {
-        formRef.current.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
-        });
-      }, 100);
-    }
-  }, [showForm]);
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem("accToken");
-    setToken(storedToken);
-  }, []);
-
-  // Clear success message after 3 seconds
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(''), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
-
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!title.trim()) {
-      newErrors.title = 'Title is required';
-    } else if (title.length < 3) {
-      newErrors.title = 'Title must be at least 3 characters';
-    }
-    
-    if (!content.trim()) {
-      newErrors.content = 'Content is required';
-    } else if (content.length < 10) {
-      newErrors.content = 'Content must be at least 10 characters';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, photo: 'File size must be less than 5MB' }));
-        return;
-      }
-      
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setErrors(prev => ({ ...prev, photo: 'Please select a valid image file' }));
-        return;
-      }
-
-      setErrors(prev => ({ ...prev, photo: null }));
-      setPhoto(file);
-      setPhotoPreview(URL.createObjectURL(file));
-    } else {
-      setPhoto(null);
-      setPhotoPreview(null);
+// Community Card Component
+function CommunityCard({ community }) {
+  const getRoleBadgeStyle = (role) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'bg-red-50 text-red-700 border-red-200';
+      case 'MODERATOR':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'MEMBER':
+        return 'bg-green-50 text-green-700 border-green-200';
+      default:
+        return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
-
-  const handleVote = async (id, delta) => {
-    if (votingStates[id]) return; // Prevent double voting
-
-    setVotingStates(prev => ({ ...prev, [id]: true }));
-    
-    try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      setPosts(posts.map(post => 
-        post.id === id 
-          ? { ...post, votes: Math.max(post.votes + delta, 0) } 
-          : post
-      ));
-    } catch (error) {
-      console.error('Voting error:', error);
-    } finally {
-      setVotingStates(prev => ({ ...prev, [id]: false }));
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-    if (!token) {
-      setErrors({ submit: 'Authentication token not found. Please login again.' });
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrors({});
-
-    try {
-      // Create FormData for multipart/form-data request
-      const formData = new FormData();
-      // formData.append('name', title.trim());
-      // formData.append('description', content.trim());
-      
-      // Append photo file if exists
-      if (photo) {
-        formData.append('file', photo);
-      }
-
-      const response = await fetch("http://localhost:8080/cloud/uploadFile", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Don't set Content-Type header when using FormData
-          // Browser will set it automatically with boundary
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('Community created:', result);
-
-      const newPost = {
-        id: Date.now(),
-        title: title.trim(),
-        content: content.trim(),
-        author: 'Anonymous', // Replace with actual user
-        votes: 0,
-        comments: 0,
-        createdAt: new Date().toLocaleString(),
-        photoUrl: photoPreview,
-      };
-      try{
-        const response1=await fetch("http://localhost:8080/communities/create",{
-          method:"POST",
-          headers:{
-            Authorization:`Bearer ${token}`,
-            "Content-Type":"application/json"
-          },
-          body:JSON.stringify({
-            name:title,
-            description:content,
-            logoUrl:result.url
-          })
-        })
-        const data=await response1.json()
-        if(!response.ok){
-          const errData=data;
-          throw Error(errData)
-        }
-        console.log(data)
-      }
-      catch(e){
-        console.log(e);
-        
-      }
-
-      setPosts(prev => [newPost, ...prev]);
-      
-      // Reset form
-      setTitle('');
-      setContent('');
-      setPhoto(null);
-      setPhotoPreview(null);
-      setShowForm(false);
-      setSuccessMessage('Community created successfully!');
-      
-    } catch (error) {
-      console.error('Error creating community:', error);
-      setErrors({ submit: 'Failed to create community. Please try again.' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const filteredPosts = useMemo(() =>
-    posts.filter(post =>
-      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.author.toLowerCase().includes(searchTerm.toLowerCase())
-    ), [posts, searchTerm]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Navbar />
-      
-      {/* Success Message */}
-      {successMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-down">
-          {successMessage}
-        </div>
-      )}
-
-      <main className="flex-1 p-4 sm:p-6 max-w-6xl mx-auto w-full">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
-            Community Posts
-          </h1>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className={`
-              px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-lg
-              ${showForm 
-                ? 'bg-gray-600 hover:bg-gray-700 text-white' 
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-xl transform hover:-translate-y-0.5'
-              }
-            `}
-            aria-expanded={showForm}
-            aria-controls="create-post-form"
-          >
-            {showForm ? '✕ Cancel' : '✏️ Create'}
-          </button>
-        </div>
-
-        {/* Search Bar */}
-        <div className="mb-8">
-          <div className="relative">
-            <input
-              type="search"
-              placeholder="Search posts, authors, or content..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="w-full p-4 pl-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm"
-              aria-label="Search community posts"
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group">
+      <div className="p-6">
+        <div className="flex items-start space-x-4">
+          {/* Community Logo */}
+          <div className="flex-shrink-0">
+            <img
+              src={community.logoUrl}
+              alt={`${community.name} logo`}
+              className="w-16 h-16 rounded-xl object-cover border-2 border-gray-100 group-hover:border-gray-200 transition-colors"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(community.name)}&background=f3f4f6&color=374151&size=64`;
+              }}
             />
-            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-              🔍
+          </div>
+          
+          {/* Community Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
+                {community.name}
+              </h3>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRoleBadgeStyle(community.role)}`}>
+                {community.role}
+              </span>
+            </div>
+            
+            {/* Additional Info Row */}
+            <div className="flex items-center text-sm text-gray-500">
+              <span className="flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                ID: {community.id}
+              </span>
             </div>
           </div>
         </div>
-
-        {/* Create Post Form */}
-        <div className={`transition-all duration-500 ease-in-out ${showForm ? 'opacity-100 scale-100' : 'opacity-0 scale-95 h-0 overflow-hidden'}`}>
-          {showForm && (
-            <form
-              ref={formRef}
-              onSubmit={handleSubmit}
-              id="create-post-form"
-              className="mb-12 bg-white p-8 rounded-2xl shadow-2xl border-2 border-indigo-200 max-w-4xl mx-auto animate-fade-in-up"
-              aria-label="Create a new community form"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-2 h-8 bg-indigo-600 rounded-full"></div>
-                <h2 className="text-2xl font-bold text-gray-800">Create a New Community</h2>
-              </div>
-
-              {errors.submit && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                  {errors.submit}
-                </div>
-              )}
-
-              <div className="space-y-6">
-                <div>
-                  <input
-                    ref={titleInputRef}
-                    type="text"
-                    placeholder="Enter Community Name..."
-                    value={title}
-                    onChange={e => setTitle(e.target.value)}
-                    className={`w-full p-4 text-lg border-2 rounded-xl focus:outline-none transition-all ${
-                      errors.title 
-                        ? 'border-red-300 focus:border-red-500' 
-                        : 'border-gray-300 focus:border-indigo-500'
-                    }`}
-                    maxLength={100}
-                    required
-                  />
-                  {errors.title && (
-                    <p className="mt-2 text-sm text-red-600">{errors.title}</p>
-                  )}
-                  <p className="mt-2 text-sm text-gray-500">{title.length}/100 characters</p>
-                </div>
-
-                <div>
-                  <textarea
-                    placeholder="Share description of the community..."
-                    value={content}
-                    onChange={e => setContent(e.target.value)}
-                    rows={6}
-                    className={`w-full p-4 text-lg border-2 rounded-xl resize-none focus:outline-none transition-all ${
-                      errors.content 
-                        ? 'border-red-300 focus:border-red-500' 
-                        : 'border-gray-300 focus:border-indigo-500'
-                    }`}
-                    required
-                  />
-                  {errors.content && (
-                    <p className="mt-2 text-sm text-red-600">{errors.content}</p>
-                  )}
-                </div>
-
-                {/* Photo Upload Section */}
-                <div>
-                  <label className="block text-lg font-medium text-gray-700 mb-2">
-                    Community Logo (Optional)
-                  </label>
-                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-xl hover:border-indigo-400 transition-colors">
-                    <div className="space-y-1 text-center">
-                      {photoPreview ? (
-                        <div className="relative">
-                          <img
-                            src={photoPreview}
-                            alt="Preview"
-                            className="mx-auto h-32 w-32 object-cover rounded-lg"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPhoto(null);
-                              setPhotoPreview(null);
-                            }}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <svg
-                            className="mx-auto h-12 w-12 text-gray-400"
-                            stroke="currentColor"
-                            fill="none"
-                            viewBox="0 0 48 48"
-                          >
-                            <path
-                              d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                              strokeWidth={2}
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                          <div className="flex text-sm text-gray-600">
-                            <label
-                              htmlFor="photo-upload"
-                              className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
-                            >
-                              <span>Upload a photo</span>
-                              <input
-                                id="photo-upload"
-                                name="photo-upload"
-                                type="file"
-                                className="sr-only"
-                                accept="image/*"
-                                onChange={handlePhotoChange}
-                              />
-                            </label>
-                            <p className="pl-1">or drag and drop</p>
-                          </div>
-                          <p className="text-xs text-gray-500">
-                            PNG, JPG, GIF up to 5MB
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  {errors.photo && (
-                    <p className="mt-2 text-sm text-red-600">{errors.photo}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className={`flex-1 py-4 px-8 rounded-xl font-semibold text-lg transition-all transform ${
-                    isSubmitting
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-indigo-600 hover:bg-indigo-700 hover:-translate-y-0.5 shadow-lg hover:shadow-xl'
-                  } text-white`}
-                >
-                  {isSubmitting ? (
-                    <span className="flex items-center justify-center gap-3">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Creating Community...
-                    </span>
-                  ) : (
-                    '🚀 Create Community'
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-
-        {/* Posts List */}
-        <div className="space-y-8">
-          {filteredPosts.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-2xl text-gray-600 mb-4">
-                {searchTerm ? 'No posts found matching your search' : 'No posts yet'}
-              </p>
-              <p className="text-gray-500">
-                {searchTerm ? 'Try a different search term' : 'Be the first to share something!'}
-              </p>
-            </div>
-          ) : (
-            filteredPosts.map(post => (
-              <article
-                key={post.id}
-                className="flex flex-col md:flex-row bg-white border border-gray-200 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden"
-                tabIndex={0}
-                aria-label={`Post titled ${post.title} by ${post.author}`}
-              >
-                {/* Vote Section */}
-                <div className="flex md:flex-col items-center justify-center bg-gray-50 w-full md:w-20 py-4 md:py-6 text-gray-600 select-none">
-                  <button
-                    onClick={() => handleVote(post.id, 1)}
-                    disabled={votingStates[post.id]}
-                    className={`text-2xl transition-all hover:scale-110 ${
-                      votingStates[post.id] 
-                        ? 'opacity-50 cursor-not-allowed' 
-                        : 'hover:text-indigo-600 focus:outline-none'
-                    }`}
-                    aria-label="Upvote"
-                    type="button"
-                  >
-                    ▲
-                  </button>
-                  <span className="font-bold mt-2 md:mt-3 text-xl mx-4 md:mx-0">{post.votes}</span>
-                  <button
-                    onClick={() => handleVote(post.id, -1)}
-                    disabled={votingStates[post.id]}
-                    className={`text-2xl transition-all hover:scale-110 ${
-                      votingStates[post.id] 
-                        ? 'opacity-50 cursor-not-allowed' 
-                        : 'hover:text-red-500 focus:outline-none'
-                    }`}
-                    aria-label="Downvote"
-                    type="button"
-                  >
-                    ▼
-                  </button>
-                </div>
-
-                {/* Post Content */}
-                <div className="flex-1 p-6 space-y-4">
-                  <h3 className="text-2xl font-bold text-gray-900 hover:text-indigo-600 cursor-pointer transition-colors">
-                    {post.title}
-                  </h3>
-                  <p className="text-gray-700 text-lg leading-relaxed whitespace-pre-wrap">
-                    {post.content}
-                  </p>
-                  {post.photoUrl && (
-                    <div className="mt-6">
-                      <img
-                        src={post.photoUrl}
-                        alt={`Post titled ${post.title}`}
-                        className="rounded-xl border border-gray-300 max-h-96 w-full object-contain bg-gray-50"
-                      />
-                    </div>
-                  )}
-                  <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-gray-200 text-sm text-gray-500">
-                    <span className="flex items-center gap-2">
-                      <span className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-semibold">
-                        {post.author[0]}
-                      </span>
-                      <strong>{post.author}</strong>
-                    </span>
-                    <span>{post.createdAt}</span>
-                    <button className="flex items-center gap-2 hover:text-indigo-600 transition-colors">
-                      💬 {post.comments} comment{post.comments !== 1 && 's'}
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))
-          )}
-        </div>
-
-        {/* Load More */}
-        {filteredPosts.length > 0 && (
-          <div className="mt-16 flex justify-center">
-            <button
-              className="bg-indigo-600 text-white px-12 py-4 rounded-xl font-semibold text-lg hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              onClick={() => alert('Load more posts - backend integration needed')}
-              type="button"
-              aria-label="Load more posts"
-            >
-              Load More Posts
+        
+        {/* Action Buttons */}
+        <div className="mt-4 pt-4 border-t border-gray-50">
+          <div className="flex space-x-2">
+            <button className="flex-1 bg-indigo-50 text-indigo-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors">
+              View Details
+            </button>
+            <button className="flex-1 bg-gray-50 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
+              Settings
             </button>
           </div>
-        )}
-      </main>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-      <style jsx>{`
-        @keyframes fade-in-down {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
+// Loading Skeleton Component
+function CommunityCardSkeleton() {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 animate-pulse">
+      <div className="p-6">
+        <div className="flex items-start space-x-4">
+          <div className="w-16 h-16 bg-gray-200 rounded-xl"></div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <div className="h-5 bg-gray-200 rounded w-32"></div>
+              <div className="h-5 bg-gray-200 rounded w-16"></div>
+            </div>
+            <div className="h-4 bg-gray-200 rounded w-20"></div>
+          </div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-gray-50">
+          <div className="flex space-x-2">
+            <div className="flex-1 h-8 bg-gray-200 rounded-lg"></div>
+            <div className="flex-1 h-8 bg-gray-200 rounded-lg"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main Community Dashboard Component
+export default function CommunityDashboard() {
+  const [communities, setCommunities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [token, setToken] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Initialize token from localStorage
+  useEffect(() => {
+    const storedToken = localStorage.getItem("accToken");
+    if (storedToken) {
+      setToken(storedToken);
+    } else {
+      setError('Authentication token not found. Please login again.');
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch communities when token is available
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchCommunities = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const response = await fetch(`http://localhost:8080/communities/getAllByUser`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
           }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || `HTTP error! status: ${response.status}`);
         }
+
+        // Handle both array and single object responses
+        const communitiesArray = Array.isArray(data) ? data : [data];
+        setCommunities(communitiesArray);
         
-        @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        if (communitiesArray.length > 0) {
+          toast.success(`Fetched ${communitiesArray.length} communities successfully!`);
         }
-        
-        .animate-fade-in-down {
-          animation: fade-in-down 0.3s ease-out;
-        }
-        
-        .animate-fade-in-up {
-          animation: fade-in-up 0.4s ease-out;
-        }
-      `}</style>
+
+      } catch (error) {
+        console.error('Error fetching communities:', error);
+        setError(error.message || 'Failed to fetch communities. Please try again.');
+        toast.error(error.message || 'Failed to fetch communities');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCommunities();
+  }, [token]);
+
+  // Filter communities based on search term
+  const filteredCommunities = communities.filter(community =>
+    community.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    community.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Retry function
+  const handleRetry = () => {
+    const storedToken = localStorage.getItem("accToken");
+    if (storedToken) {
+      setToken(storedToken);
+    } else {
+      setError('Authentication token not found. Please login again.');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Header Section */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">My Communities</h1>
+                <p className="mt-2 text-gray-600">Manage and view all your communities in one place</p>
+              </div>
+              <div className="mt-4 sm:mt-0">
+                <button className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Create Community
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Search Bar */}
+        {!loading && !error && communities.length > 0 && (
+          <div className="mb-8">
+            <div className="relative max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="search"
+                placeholder="Search communities..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, index) => (
+              <CommunityCardSkeleton key={index} />
+            ))}
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading Communities</h3>
+                <p className="text-red-700 mb-4">{error}</p>
+                <button 
+                  onClick={handleRetry}
+                  className="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && communities.length === 0 && (
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <div className="bg-gray-50 rounded-xl p-8">
+                <div className="flex items-center justify-center w-16 h-16 mx-auto bg-gray-100 rounded-full mb-6">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-medium text-gray-900 mb-2">No Communities Found</h3>
+                <p className="text-gray-600 mb-6">You haven't joined any communities yet. Create your first community to get started!</p>
+                <button className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Create Your First Community
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Communities Grid */}
+        {!loading && !error && filteredCommunities.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredCommunities.map(community => (
+                <CommunityCard key={community.id} community={community} />
+              ))}
+            </div>
+            
+            {/* Results Summary */}
+            <div className="mt-8 text-center">
+              <p className="text-gray-600">
+                Showing {filteredCommunities.length} of {communities.length} communities
+                {searchTerm && ` matching "${searchTerm}"`}
+              </p>
+            </div>
+          </>
+        )}
+
+        {/* No Search Results */}
+        {!loading && !error && communities.length > 0 && filteredCommunities.length === 0 && searchTerm && (
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <div className="bg-gray-50 rounded-xl p-8">
+                <div className="flex items-center justify-center w-16 h-16 mx-auto bg-gray-100 rounded-full mb-6">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-medium text-gray-900 mb-2">No Results Found</h3>
+                <p className="text-gray-600 mb-4">
+                  No communities match your search for "{searchTerm}". Try a different search term.
+                </p>
+                <button 
+                  onClick={() => setSearchTerm('')}
+                  className="text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  Clear Search
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
