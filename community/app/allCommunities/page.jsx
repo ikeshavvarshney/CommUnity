@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
+import Navbar from '../components/Navbar';
 
 // Custom color classes based on your color grading
 const customColors = {
@@ -25,6 +26,7 @@ function CommunityCard({ community, onJoin, onVisit, isJoining }) {
     return colors[category] || colors.default;
   };
   const [token,setToken]=useState("")
+  const router=useRouter()
   useEffect(()=>{
     const st=localStorage.getItem("accToken")
     console.log(token)
@@ -50,7 +52,8 @@ function CommunityCard({ community, onJoin, onVisit, isJoining }) {
       }
 
       const data = await response.text();
-      console.log("Joined:", data);
+      toast.success(data)
+      router.push("/communities")
     } catch (err) {
       console.error(err);
     }
@@ -137,30 +140,7 @@ function CommunityCard({ community, onJoin, onVisit, isJoining }) {
         </div>
       )}
 
-      {/* Stats */}
-      <div className="px-6 pb-4">
-        <div className="flex items-center justify-between text-sm" style={{color: customColors.tertiary}}>
-          <div className="flex items-center space-x-4">
-            <span className="flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              {community.memberCount?.toLocaleString() || '0'}
-            </span>
-            <span className="flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-              </svg>
-              {community.postCount || 0} posts
-            </span>
-          </div>
-          {community.createdAt && (
-            <span>
-              Created {new Date(community.createdAt).toLocaleDateString()}
-            </span>
-          )}
-        </div>
-      </div>
+
 
       {/* Action Buttons */}
       <div className="px-6 pb-6 pt-2 border-t" style={{borderColor: customColors.quaternary}}>
@@ -363,12 +343,13 @@ export default function PublicCommunitiesPage() {
   };
 
   const handleVisitCommunity = (community) => {
-    router.push(`/communities/${community.id}`);
+    router.push(`/communityPost/${community.id}`);
   };
 
   return (
     <div className="min-h-screen" style={{backgroundColor: customColors.quinary}}>
       {/* Header */}
+      <Navbar></Navbar>
       <div className="bg-white border-b" style={{borderColor: customColors.quaternary}}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-8">

@@ -12,10 +12,131 @@ const customColors = {
   quinary: '#d4d8dd'       // Very light gray
 };
 
-// Sample Data
+// Members Sidebar Component
+function MembersSidebar({ members, communityName }) {
+  const getRoleBadgeStyle = (role) => {
+    switch (role) {
+      case 'ADMIN':
+        return { backgroundColor: '#fee2e2', color: '#dc2626', borderColor: '#fecaca' };
+      case 'MODERATOR':
+        return { backgroundColor: '#dbeafe', color: '#2563eb', borderColor: '#bfdbfe' };
+      case 'MEMBER':
+        return { backgroundColor: '#dcfce7', color: '#16a34a', borderColor: '#bbf7d0' };
+      default:
+        return { backgroundColor: customColors.quinary, color: customColors.secondary, borderColor: customColors.quaternary };
+    }
+  };
 
+  // Group members by role
+  const groupedMembers = {
+    MODERATOR: members.filter(m => m.role === 'CREATOR' || m.role === 'ADMIN'),
+    MEMBER: members.filter(m => m.role === 'MEMBER'),
+  };
+  
 
-// Members Modal Component
+  return (
+    <div className="bg-white rounded-xl shadow-md border sticky top-6" style={{borderColor: customColors.quaternary}}>
+      {/* Header */}
+      <div className="p-4 border-b" style={{borderColor: customColors.quaternary}}>
+        <h3 className="text-lg font-bold" style={{color: customColors.primary}}>
+          Community Members
+        </h3>
+        <p className="text-sm" style={{color: customColors.tertiary}}>
+          {members.length} total members
+        </p>
+      </div>
+
+      {/* Members List */}
+      <div className="max-h-96 overflow-y-auto">
+        {/* Admins */}
+        
+
+        {/* Moderators */}
+        {groupedMembers.MODERATOR.length > 0 && (
+          <div className="p-4 border-t" style={{borderColor: customColors.quaternary}}>
+            <h4 className="text-sm font-semibold mb-3 flex items-center" style={{color: customColors.secondary}}>
+              <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
+              Moderators ({groupedMembers.MODERATOR.length})
+            </h4>
+            <div className="space-y-2">
+              {groupedMembers.MODERATOR.map(member => {
+                const badgeStyle = getRoleBadgeStyle(member.role);
+                return (
+                  <div key={`mod-${member.username}`} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                    <img
+                      src={member.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.username || member.firstName || 'User')}&background=2563eb&color=ffffff&size=24`}
+                      alt={`${member.username} profile`}
+                      className="w-6 h-6 rounded-full border object-cover"
+                      style={{borderColor: customColors.quaternary}}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate" style={{color: customColors.primary}}>
+                        {member.firstName && member.lastName ? `${member.firstName} ${member.lastName}` : member.username}
+                      </p>
+                      <p className="text-xs truncate" style={{color: customColors.tertiary}}>
+                        @{member.username}
+                      </p>
+                    </div>
+                    <span 
+                      className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium border flex-shrink-0"
+                      style={badgeStyle}
+                    >
+                      Mod
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Members */}
+        {groupedMembers.MEMBER.length > 0 && (
+          <div className="p-4 border-t" style={{borderColor: customColors.quaternary}}>
+            <h4 className="text-sm font-semibold mb-3 flex items-center" style={{color: customColors.secondary}}>
+              <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+              Members ({groupedMembers.MEMBER.length})
+            </h4>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {groupedMembers.MEMBER.map(member => {
+                const badgeStyle = getRoleBadgeStyle(member.role);
+                return (
+                  <div key={`member-${member.username}`} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                    <img
+                      src={member.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.username || member.firstName || 'User')}&background=16a34a&color=ffffff&size=24`}
+                      alt={`${member.username} profile`}
+                      className="w-6 h-6 rounded-full border object-cover"
+                      style={{borderColor: customColors.quaternary}}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate" style={{color: customColors.primary}}>
+                        {member.firstName && member.lastName ? `${member.firstName} ${member.lastName}` : member.username}
+                      </p>
+                      <p className="text-xs truncate" style={{color: customColors.tertiary}}>
+                        @{member.username}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {members.length === 0 && (
+          <div className="p-4 text-center">
+            <p className="text-sm" style={{color: customColors.tertiary}}>
+              No members found
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Members Modal Component (keeping the original modal)
 function MembersModal({ isOpen, onClose, members, communityName }) {
   const getRoleBadgeStyle = (role) => {
     switch (role) {
@@ -70,15 +191,15 @@ function MembersModal({ isOpen, onClose, members, communityName }) {
                   >
                     <div className="flex items-center space-x-3">
                       <img
-                        src={member.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.username || member.name)}&background=${customColors.secondary.slice(1)}&color=ffffff&size=48`}
-                        alt={`${member.username || member.name} profile`}
-                        className="w-12 h-12 rounded-full border-2 object-cover"
+                        src={member.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(member.username || member.firstName || 'User')}&background=${customColors.secondary.slice(1)}&color=ffffff&size=48`}
+                        alt={`${member.username} profile`}
+                        className="w-8 h-8 rounded-full border-2 object-cover"
                         style={{borderColor: customColors.quaternary}}
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <h3 className="text-sm font-medium truncate" style={{color: customColors.primary}}>
-                            {member.name || member.username}
+                            {member.firstName && member.lastName ? `${member.firstName} ${member.lastName}` : member.username}
                           </h3>
                           <span 
                             className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border"
@@ -588,7 +709,7 @@ function PostCard({ post, onVote, onOpenComments }) {
   const { hashtags, description } = parseContent(post.description);
   const isExpanded = expandedPostId === post.id;
   const truncatedDescription =
-    description.length > 200 ? description.substring(0, 200) + "..." : description;
+    description.length > 150 ? description.substring(0, 150) + "..." : description;
 
   const handleVoteClick = async () => {
     setVotingPostId(post.id);
@@ -601,40 +722,40 @@ function PostCard({ post, onVote, onOpenComments }) {
 
   return (
     <article
-      className="bg-white rounded-2xl shadow-lg border transition-all duration-300 hover:shadow-xl"
+      className="bg-white rounded-xl shadow-md border transition-all duration-300 hover:shadow-lg"
       style={{ borderColor: "#e5e7eb" }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-6 pb-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold bg-gray-400">
+      <div className="flex items-center justify-between p-4 pb-2">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold bg-gray-400">
             {post.createdByUser?.[0] || "?"}
           </div>
           <div>
-            <h3 className="font-semibold">{post.createdByUser || "Unknown User"}</h3>
-            <p className="text-sm text-gray-500">
-              {new Date(post.createdAt).toLocaleString()}
+            <h3 className="font-semibold text-sm">{post.createdByUser || "Unknown User"}</h3>
+            <p className="text-xs text-gray-500">
+              {new Date(post.createdAt).toLocaleDateString()}
             </p>
           </div>
         </div>
-        <button className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button className="p-1 rounded-full hover:bg-gray-100 transition-colors">
+          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" />
           </svg>
         </button>
       </div>
 
       {/* Content */}
-      <div className="px-6">
-        <h2 className="text-xl font-bold mb-3">{post.title}</h2>
-        {hashtags && <p className="text-sm text-blue-500 mb-3">{hashtags}</p>}
-        <p className="text-gray-700 leading-relaxed mb-4">
+      <div className="px-4">
+        <h2 className="text-lg font-bold mb-2">{post.title}</h2>
+        {hashtags && <p className="text-xs text-blue-500 mb-2">{hashtags}</p>}
+        <p className="text-gray-700 leading-relaxed mb-3 text-sm">
           {isExpanded ? description : truncatedDescription}
         </p>
-        {description.length > 200 && (
+        {description.length > 150 && (
           <button
             onClick={() => setExpandedPostId(isExpanded ? null : post.id)}
-            className="text-sm font-medium text-blue-600 hover:underline"
+            className="text-xs font-medium text-blue-600 hover:underline mb-3"
           >
             {isExpanded ? "Show less" : "Show more"}
           </button>
@@ -643,22 +764,22 @@ function PostCard({ post, onVote, onOpenComments }) {
           <img
             src={post.imageUrl}
             alt={post.title}
-            className="w-full rounded-xl object-cover max-h-96 border mt-4"
+            className="w-full rounded-lg object-cover max-h-48 border mt-2"
           />
         )}
       </div>
 
       {/* Actions */}
-      <div className="px-6 py-4 border-t flex justify-between items-center">
-        <div className="flex items-center space-x-6">
+      <div className="px-4 py-3 border-t flex justify-between items-center">
+        <div className="flex items-center space-x-4">
           <button
             onClick={handleVoteClick}
             disabled={votingPostId === post.id}
-            className={`flex items-center space-x-1 p-2 rounded-full transition-all ${
+            className={`flex items-center space-x-1 p-1 rounded-full transition-all ${
               votingPostId === post.id ? "opacity-50" : "hover:bg-red-50"
             }`}
           >
-            <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -666,13 +787,13 @@ function PostCard({ post, onVote, onOpenComments }) {
                 d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
               />
             </svg>
-            <span className="text-sm text-gray-600">{post.likes || 0}</span>
+            <span className="text-xs text-gray-600">{post.likes || 0}</span>
           </button>
           <button
             onClick={() => onOpenComments(post)}
-            className="flex items-center space-x-1 p-2 rounded-full hover:bg-gray-50 transition-colors"
+            className="flex items-center space-x-1 p-1 rounded-full hover:bg-gray-50 transition-colors"
           >
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -680,29 +801,29 @@ function PostCard({ post, onVote, onOpenComments }) {
                 d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
               />
             </svg>
-            <span className="text-sm text-gray-600">{post.comments?.length ?? 0}</span>
+            <span className="text-xs text-gray-600">{post.comments?.length ?? 0}</span>
           </button>
         </div>
       </div>
 
       {/* Comments Preview */}
       {post.comments?.length > 0 && (
-        <div className="px-6 py-4 border-t space-y-2">
-          {post.comments.slice(0, 3).map((comment) => (
-            <div key={comment.id} className="flex items-start space-x-3">
-              <div className="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white text-sm font-semibold">
+        <div className="px-4 py-3 border-t space-y-2">
+          {post.comments.slice(0, 2).map((comment) => (
+            <div key={comment.id} className="flex items-start space-x-2">
+              <div className="w-6 h-6 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs font-semibold">
                 {comment.commentedByUser?.[0] || "?"}
               </div>
-              <div>
-                <p className="text-sm font-medium">{comment.commentedByUser || "Unknown User"}</p>
-                <p className="text-sm text-gray-600">{comment.text}</p>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-gray-800">{comment.commentedByUser || "Unknown User"}</p>
+                <p className="text-xs text-gray-600 line-clamp-2">{comment.text}</p>
               </div>
             </div>
           ))}
-          {post.comments.length > 3 && (
+          {post.comments.length > 2 && (
             <button
               onClick={() => onOpenComments(post)}
-              className="text-sm font-medium text-blue-600 hover:underline"
+              className="text-xs font-medium text-blue-600 hover:underline mt-2"
             >
               View all {post.comments.length} comments
             </button>
@@ -718,13 +839,13 @@ export default function CommunityDetailPage() {
   const router = useRouter();
   const { id } = useParams();
   
-  const [community, setCommunity] = useState([]);
+  const [community, setCommunity] = useState({});
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTab] = useState('posts');
   const [loading, setLoading] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [showMembers, setShowMembers] = useState(false); // New state for members modal
+  const [showMembers, setShowMembers] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const [token, setToken] = useState('');
 
@@ -844,8 +965,12 @@ export default function CommunityDetailPage() {
     setShowMembers(false);
   };
 
-  if (loading) {
-    return <p className="p-6 text-center">Loading posts...</p>;
+  if (loading && posts.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{backgroundColor: customColors.quinary}}>
+        <p className="text-lg" style={{color: customColors.secondary}}>Loading community...</p>
+      </div>
+    );
   }
 
   return (
@@ -874,7 +999,7 @@ export default function CommunityDetailPage() {
                 className="w-24 h-24 rounded-xl border-2 object-cover"
                 style={{borderColor: customColors.quaternary}}
                 onError={(e) => {
-                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(community.name)}&background=${customColors.secondary.slice(1)}&color=ffffff&size=96`;
+                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(community.name || 'Community')}&background=${customColors.secondary.slice(1)}&color=ffffff&size=96`;
                 }}
               />
               <div className="flex-1">
@@ -901,13 +1026,15 @@ export default function CommunityDetailPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
-                  community.role === 'ADMIN' ? 'bg-red-50 text-red-700 border-red-200' :
-                  community.role === 'MODERATOR' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                  'bg-green-50 text-green-700 border-green-200'
-                }`}>
-                  {community.role}
-                </span>
+                {community.role && (
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
+                    community.role === 'ADMIN' ? 'bg-red-50 text-red-700 border-red-200' :
+                    community.role === 'MODERATOR' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                    'bg-green-50 text-green-700 border-green-200'
+                  }`}>
+                    {community.role}
+                  </span>
+                )}
                 <button
                   onClick={() => setShowCreatePost(true)}
                   className="px-6 py-3 rounded-xl font-medium text-white transition-colors hover:opacity-90"
@@ -921,21 +1048,49 @@ export default function CommunityDetailPage() {
         </div>
       </div>
 
-      {/* Content */}
+      {/* Main Content with Sidebar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-8">
-          {posts.length === 0 ? (
-            <p className="text-center text-gray-500">No posts yet.</p>
-          ) : (
-            posts.map(post => (
-              <PostCard 
-                key={post.id} 
-                post={post} 
-                onVote={handleVote}
-                onOpenComments={handleOpenComments}
-              />
-            ))
-          )}
+        <div className="flex gap-8">
+          {/* Left Sidebar - Members */}
+          <div className="w-80 flex-shrink-0">
+            <MembersSidebar 
+              members={community.members || []} 
+              communityName={community.name || 'Community'} 
+            />
+          </div>
+
+          {/* Main Content - Posts */}
+          <div className="flex-1">
+            <div className="space-y-6">
+              {loading && posts.length === 0 ? (
+                <p className="text-center text-gray-500">Loading posts...</p>
+              ) : posts.length === 0 ? (
+                <div className="text-center py-12">
+                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                  </svg>
+                  <h3 className="text-lg font-medium text-gray-600 mb-2">No posts yet</h3>
+                  <p className="text-gray-500 mb-4">Be the first to share something with this community!</p>
+                  <button
+                    onClick={() => setShowCreatePost(true)}
+                    className="px-6 py-3 rounded-xl font-medium text-white transition-colors hover:opacity-90"
+                    style={{backgroundColor: customColors.primary}}
+                  >
+                    Create First Post
+                  </button>
+                </div>
+              ) : (
+                posts.map(post => (
+                  <PostCard 
+                    key={post.id} 
+                    post={post} 
+                    onVote={handleVote}
+                    onOpenComments={handleOpenComments}
+                  />
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -959,7 +1114,7 @@ export default function CommunityDetailPage() {
         isOpen={showMembers}
         onClose={handleCloseMembers}
         members={community.members || []}
-        communityName={community.name}
+        communityName={community.name || 'Community'}
       />
     </div>
   );

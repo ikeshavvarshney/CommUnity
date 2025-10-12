@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-
+import Navbar from '../components/Navbar';
 // Community Card Component
 function CommunityCard({ community, onClick }) {
   const router = useRouter();
@@ -490,6 +490,7 @@ export default function CommunityDashboard() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header Section */}
+      <Navbar></Navbar>
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-8">

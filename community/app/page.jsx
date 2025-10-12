@@ -1,10 +1,76 @@
+"use client";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import Navbar from "./components/Navbar";
 import Post from "./components/Post";
 import EventsSection from "./components/EventsSection";
 import SmallProfile from "./components/SmallProfile";
 
 export default function Home() {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState('');
+
+  // Get token from localStorage
+  useEffect(() => {
+    const st = localStorage.getItem("accToken");
+    setToken(st);
+  }, []);
+
+  // Fetch profile data
+  const fetchProfile = async () => {
+    if (!token) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:8080/user/getProfile', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('Profile data:', userData);
+        setProfile(userData);
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to fetch profile:', response.status, errorText);
+        toast.error('Failed to load profile data');
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      toast.error('Error connecting to server');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch profile when token is available
+  useEffect(() => {
+    if (token) {
+      fetchProfile();
+    }
+  }, [token]);
+
+  // Helper functions
+  const getFullName = () => {
+    if (!profile) return 'User';
+    const firstName = profile.firstName || '';
+    const lastName = profile.lastName || '';
+    return `${firstName} ${lastName}`.trim() || profile.username || 'User';
+  };
+
+  const getProfileImage = () => {
+    if (profile?.profilePic) {
+      return profile.profilePic;
+    }
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(getFullName())}&background=3B82F6&color=ffffff&size=200`;
+  };
+
   const exampleEvents = [
     {
       eventTitle: 'Tech Innovators Meetup 2025',
@@ -91,7 +157,7 @@ export default function Home() {
       content: "Good database design is the foundation of any successful application. Whether you're working with SQL or NoSQL databases, these fundamental principles will help you create efficient, maintainable, and scalable data structures."
     }
   ];
-  
+
   return (
     <div>
       <Navbar />
@@ -99,12 +165,41 @@ export default function Home() {
         <div className="flex-col max-w-80">
           <h2 className="px-1 text-lg font-bold">Profile</h2>
           <Link href="../profile">
-            <SmallProfile
-              profilePic="https://randomuser.me/api/portraits/women/44.jpg"
-              username="Jane Doe"
-              bio="Full-stack developer, music lover, and tech enthusiast."
-              about='Passionate about creating innovative solutions and building meaningful connections in the tech community. Love exploring new technologies, contributing to open source projects, and sharing knowledge with fellow developers. When not coding, you can find me playing guitar or hiking in nature.'
-            />
+            {loading ? (
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 animate-pulse">
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-300 rounded w-3/4"></div>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-2">
+                  <div className="h-3 bg-gray-300 rounded"></div>
+                  <div className="h-3 bg-gray-300 rounded w-5/6"></div>
+                  <div className="h-3 bg-gray-300 rounded w-4/6"></div>
+                </div>
+              </div>
+            ) : profile ? (
+              <SmallProfile
+                profilePic={getProfileImage()}
+                username={getFullName()}
+                bio={profile.bio || `${profile.role || 'User'} • ${profile.communities?.length || 0} communities`}
+                about={profile.about || `Hi! I'm ${getFullName()}. Welcome to my profile. I'm part of ${profile.communities?.length || 0} communities and love connecting with fellow members!`}
+              />
+            ) : (
+              <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+                <div className="text-center">
+                  <div className="text-gray-500 mb-2">Unable to load profile</div>
+                  <button 
+                    onClick={fetchProfile}
+                    className="text-blue-600 hover:text-blue-800 text-sm"
+                  >
+                    Try again
+                  </button>
+                </div>
+              </div>
+            )}
           </Link>
         </div>
         

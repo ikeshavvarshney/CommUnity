@@ -320,13 +320,13 @@ const UserProfile = () => {
 
     switch (activeTab) {
       case 'posts':
-        return <PostsGrid posts={profile?.posts || []} onPostClick={setSelectedPost} />;
+        return <PostsGrid posts={profile?.postsDetails || []} onPostClick={setSelectedPost} />;
       case 'communities':
         return <CommunitiesList communities={profile?.communities || []} />;
       case 'events':
         return <EventsList events={sampleEvents} />;
       default:
-        return <PostsGrid posts={profile?.posts || []} onPostClick={setSelectedPost} />;
+        return <PostsGrid posts={profile?.postsDetails || []} onPostClick={setSelectedPost} />;
     }
   };
 
@@ -391,7 +391,7 @@ const UserProfile = () => {
               {/* Stats */}
               <div className="grid grid-cols-3 gap-4 mb-6 text-center">
                 <div className="bg-gray-50 rounded-lg p-3">
-                  <div className="text-lg font-bold text-gray-800">{profile.posts?.length || 0}</div>
+                  <div className="text-lg font-bold text-gray-800">{profile.postsDetails?.length || 0}</div>
                   <div className="text-xs text-gray-600">Posts</div>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3">
@@ -476,7 +476,7 @@ const UserProfile = () => {
                         : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                     }`}
                   >
-                    Posts ({profile.posts?.length || 0})
+                    Posts ({profile.postsDetails?.length || 0})
                   </button>
                   <button
                     onClick={() => {
