@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Navbar from '../components/Navbar';
+import Navbar from '@/app/components/Navbar';
+import { useParams } from 'next/navigation';
 
 // Sample data
 const samplePosts = [
@@ -50,6 +51,7 @@ const sampleEvents = [
   { id: 2, title: 'Web Dev Meetup', date: '2025-10-25', location: 'New York, NY', attendees: 85 },
   { id: 3, title: 'Tech Career Fair', date: '2025-11-05', location: 'Austin, TX', attendees: 450 }
 ];
+
 
 // Subcomponents
 const Post = ({ post, onBack }) => (
@@ -128,23 +130,61 @@ const ReadOnlyField = ({ label, value, multiline = false }) => (
 );
 
 const OtherUserProfile = () => {
-  // Simulated read-only user profile
-  const [profile] = useState({
-    firstName: 'Alex',
-    lastName: 'Carter',
-    username: 'alexcarter',
-    email: 'alex.carter@example.com',
-    bio: "Hi! I'm Alex, a passionate developer who loves building music streaming apps and exploring the latest web technologies. Always learning, always sharing, and part of awesome dev communities!",
-    about:
-      "I'm a Full Stack Developer with interests in music technology and open-source. I enjoy creating elegant web solutions and contributing to developer communities.",
-    profilePic: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=200&q=80',
-    postsCount: 214,
-    followersCount: 3100,
-    followingCount: 567,
-  });
+  const [token, setToken] = useState('');
+  const { id } = useParams();
 
+  const [profile, setProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('posts');
   const [selectedPost, setSelectedPost] = useState(null);
+
+  useEffect(() => {
+    const st = localStorage.getItem("accToken");
+    if (st) setToken(st);
+  }, []);
+
+  useEffect(() => {
+    if (!id || !token) return;
+
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch(`http://localhost:8080/user/othersProfile/${id}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.error("Error fetching profile:", data);
+          // Optionally show a message or fallback
+          return;
+        }
+
+        // Set the profile data to state
+        setProfile({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          username: data.username,
+          email: data.email,
+          bio: data.bio,
+          about: data.about,
+          profilePic: data.profilePic,
+          postsCount: data.posts?.length || 0,
+          followersCount: data.followers?.length || 0,
+          followingCount: data.following?.length || 0,
+          // Add other fields as necessary
+        });
+
+      } catch (err) {
+        console.error("Fetch failed:", err);
+      }
+    };
+
+    fetchProfile();
+  }, [id, token]);
 
   const renderRightContent = () => {
     if (selectedPost) {
@@ -152,15 +192,19 @@ const OtherUserProfile = () => {
     }
     switch (activeTab) {
       case 'posts':
-        return <PostsGrid posts={samplePosts} onPostClick={setSelectedPost} />;
+        return <PostsGrid posts={profile?.posts || []} onPostClick={setSelectedPost} />;
       case 'communities':
-        return <CommunitiesList communities={sampleCommunities} />;
+        return <CommunitiesList communities={profile?.communities || []} />;
       case 'events':
-        return <EventsList events={sampleEvents} />;
+        return <EventsList events={profile?.events || []} />;
       default:
-        return <PostsGrid posts={samplePosts} onPostClick={setSelectedPost} />;
+        return <PostsGrid posts={profile?.posts || []} onPostClick={setSelectedPost} />;
     }
   };
+
+  if (!profile) {
+    return <div>Loading profile...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-[#d4d8dd] font-sans">
