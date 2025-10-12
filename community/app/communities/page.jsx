@@ -69,9 +69,7 @@ function CommunityCard({ community, onClick }) {
             <button className="flex-1 bg-indigo-50 text-indigo-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors">
               View Details
             </button>
-            <button className="flex-1 bg-gray-50 text-gray-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
-              Settings
-            </button>
+            
           </div>
         </div>
       </div>
@@ -500,7 +498,16 @@ export default function CommunityDashboard() {
                 <h1 className="text-3xl font-bold text-gray-900">My Communities</h1>
                 <p className="mt-2 text-gray-600">Manage and view all your communities in one place</p>
               </div>
-              <div className="mt-4 sm:mt-0">
+              <div className="mt-4 sm:mt-0 flex gap-3">
+              <button 
+                  onClick={() => router.push("/allCommunities")}
+                  className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Join Community
+                </button>
                 <button 
                   onClick={() => setShowCreateModal(true)}
                   className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
@@ -581,15 +588,15 @@ export default function CommunityDashboard() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-medium text-gray-900 mb-2">No Communities Found</h3>
-                <p className="text-gray-600 mb-6">You haven't joined any communities yet. Create your first community to get started!</p>
+                <p className="text-gray-600 mb-6">You haven't joined any communities yet. Join your first community to get started!</p>
                 <button 
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() =>router.push("/allCommunities") }
                   className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  Create Your First Community
+                  Join Your First Community
                 </button>
               </div>
             </div>

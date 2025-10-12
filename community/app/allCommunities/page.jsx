@@ -24,7 +24,37 @@ function CommunityCard({ community, onJoin, onVisit, isJoining }) {
     };
     return colors[category] || colors.default;
   };
+  const [token,setToken]=useState("")
+  useEffect(()=>{
+    const st=localStorage.getItem("accToken")
+    console.log(token)
+    setToken(st)
+  },[])
+  
+  const joinCommunity = async (id) => {
+    if (!token) return;
 
+    try {
+      const response = await fetch(`http://localhost:8080/communities/join/${id}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        console.error("Join failed:", err);
+        return;
+      }
+
+      const data = await response.text();
+      console.log("Joined:", data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
   const categoryStyle = getCategoryColor(community.category || 'General');
 
   return (
@@ -157,7 +187,7 @@ function CommunityCard({ community, onJoin, onVisit, isJoining }) {
           
           {!community.isJoined && (
             <button
-              onClick={() => onJoin(community)}
+              onClick={() => joinCommunity(community.id)}
               disabled={isJoining === community.id}
               className="flex-1 px-4 py-2.5 rounded-xl font-medium text-white transition-colors disabled:opacity-50"
               style={{backgroundColor: customColors.primary}}
