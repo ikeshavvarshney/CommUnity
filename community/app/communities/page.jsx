@@ -1,9 +1,11 @@
 "use client";
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
 // Community Card Component
-function CommunityCard({ community }) {
+function CommunityCard({ community , onClick}) {
+  const router=useRouter()
   const getRoleBadgeStyle = (role) => {
     switch (role) {
       case 'ADMIN':
@@ -18,8 +20,10 @@ function CommunityCard({ community }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group">
-      <div className="p-6">
+<div
+  onClick={onClick}
+  className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 group cursor-pointer"
+>      <div className="p-6">
         <div className="flex items-start space-x-4">
           {/* Community Logo */}
           <div className="flex-shrink-0">
@@ -106,6 +110,10 @@ export default function CommunityDashboard() {
   const [error, setError] = useState('');
   const [token, setToken] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const router=useRouter()
+  function handleClick(id){
+    router.push(`/communityPost/${id}`)
+  }
 
   // Initialize token from localStorage
   useEffect(() => {
@@ -143,6 +151,7 @@ export default function CommunityDashboard() {
 
         // Handle both array and single object responses
         const communitiesArray = Array.isArray(data) ? data : [data];
+        console.log(communitiesArray)
         setCommunities(communitiesArray);
         
         if (communitiesArray.length > 0) {
@@ -281,9 +290,9 @@ export default function CommunityDashboard() {
         {/* Communities Grid */}
         {!loading && !error && filteredCommunities.length > 0 && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCommunities.map(community => (
-                <CommunityCard key={community.id} community={community} />
+                <CommunityCard onClick={()=> handleClick(community.id)} key={community.id} community={community} />
               ))}
             </div>
             
