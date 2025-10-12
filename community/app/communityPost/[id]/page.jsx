@@ -265,16 +265,19 @@ function CommentsModal({ isOpen, onClose, post, onRefresh }) {
     if (!post) return;
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/posts/${post.id}/comments`, {
+      const res = await fetch(`http://localhost:8080/posts/getPostWithComments/${post.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
-      if (res.ok) {
-        const data = await res.json();
-        setComments(data);
+      const data=await res.json()
+      console.log(data)
+      if (!res.ok) {
+        console.log(data)
       }
+      setComments(data.comments);
+
     } catch (error) {
       console.error('Error fetching comments:', error);
     } finally {
@@ -295,13 +298,14 @@ function CommentsModal({ isOpen, onClose, post, onRefresh }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text: newComment.trim(),
+          reply: newComment.trim(),
           postId: post.id
         }),
       });
-
+      const data=await res.text()
       if (res.ok) {
         toast.success('Comment added successfully!');
+        console.log(data)
         setNewComment('');
         await fetchComments(); // Refresh comments
         onRefresh(); // Refresh posts to update comment count
@@ -358,16 +362,16 @@ function CommentsModal({ isOpen, onClose, post, onRefresh }) {
                 <div key={comment.id} className="flex space-x-3 p-4 rounded-xl" style={{backgroundColor: customColors.quinary}}>
                   <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold" 
                        style={{backgroundColor: customColors.secondary}}>
-                    {comment.commentedByUser?.[0] || 'U'}
+                    {comment.username?.[0] || 'U'}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1">
-                      <span className="font-medium" style={{color: customColors.primary}}>{comment.commentedByUser}</span>
+                      <span className="font-medium" style={{color: customColors.primary}}>{comment.username}</span>
                       <span className="text-sm" style={{color: customColors.tertiary}}>
                         {new Date(comment.createdAt).toLocaleDateString()}
                       </span>
                     </div>
-                    <p style={{color: customColors.secondary}}>{comment.text}</p>
+                    <p style={{color: customColors.secondary}}>{comment.reply}</p>
                   </div>
                 </div>
               ))}

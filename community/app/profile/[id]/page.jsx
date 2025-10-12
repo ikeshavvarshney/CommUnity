@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/app/components/Navbar';
 import { useParams } from 'next/navigation';
-
+import { toast } from 'react-toastify';
 // Sample data
 const samplePosts = [
   {
@@ -52,6 +52,12 @@ const sampleEvents = [
   { id: 3, title: 'Tech Career Fair', date: '2025-11-05', location: 'Austin, TX', attendees: 450 }
 ];
 
+// Helper function to get initials from name
+const getInitials = (firstName, lastName) => {
+  const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';
+  const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
+  return firstInitial + lastInitial;
+};
 
 // Subcomponents
 const Post = ({ post, onBack }) => (
@@ -88,6 +94,27 @@ const PostsGrid = ({ posts, onPostClick }) => (
     ))}
   </div>
 );
+
+const MemberCard = ({ member }) => {
+  const nameLetters = member.name ? member.name.substring(0, 2) : "";
+
+  return (
+    <div className="member-card">
+      {member.profilePicture ? (
+        <img
+          src={member.profilePicture}
+          alt={member.name}
+          className="profile-pic"
+        />
+      ) : (
+        <div className="name-letters">
+          {nameLetters.toUpperCase()}
+        </div>
+      )}
+      <h3>{member.name}</h3>
+    </div>
+  );
+};
 
 const CommunitiesList = ({ communities }) => (
   <div className="space-y-4">
@@ -130,6 +157,25 @@ const ReadOnlyField = ({ label, value, multiline = false }) => (
 );
 
 const OtherUserProfile = () => {
+  const handleClick=async(name)=>{
+    const response=await fetch(`http://localhost:8080/follow/send`,{
+      method:"POST",
+      headers:{
+        Authorization:`Bearer ${token}`,
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        username:name
+      })
+    })
+    const data=await response.text()
+    if(!response.ok){
+      console.log(data)
+      return
+    }
+    toast.success(data)
+    console.log(data)
+  }
   const [token, setToken] = useState('');
   const { id } = useParams();
 
@@ -206,6 +252,9 @@ const OtherUserProfile = () => {
     return <div>Loading profile...</div>;
   }
 
+  // Get initials for fallback
+  const initials = getInitials(profile.firstName, profile.lastName);
+
   return (
     <div className="min-h-screen bg-[#d4d8dd] font-sans">
       <Navbar />
@@ -216,11 +265,23 @@ const OtherUserProfile = () => {
             <div className="bg-[#c0c8ca] rounded-lg shadow-md p-6 sticky top-6">
               {/* Profile Header */}
               <div className="text-center mb-6">
-                <img
-                  src={profile.profilePic}
-                  alt={`${profile.firstName} ${profile.lastName}`}
-                  className="w-24 h-24 rounded-full object-cover border-4 border-[#1a2d42] mx-auto mb-4 shadow-md"
-                />
+                {/* Profile Picture with Fallback to Initials */}
+                {profile.profilePic ? (
+                  <img
+                    src={profile.profilePic}
+                    alt={`${profile.firstName} ${profile.lastName}`}
+                    className="w-24 h-24 rounded-full object-cover border-4 border-[#1a2d42] mx-auto mb-4 shadow-md"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-[#2e4156] border-4 border-[#1a2d42] mx-auto mb-4 shadow-md flex items-center justify-center text-white text-2xl font-bold">
+                    {initials}
+                  </div>
+                )}
+<button onClick={()=>handleClick(profile.username)} className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-300">
+  Follow
+</button>
+<br />
+<br />
                 <h1 className="text-2xl font-bold text-[#2e4156] mb-1">
                   {profile.firstName} {profile.lastName}
                 </h1>

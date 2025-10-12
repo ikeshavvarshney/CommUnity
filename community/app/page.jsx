@@ -6,17 +6,56 @@ import Navbar from "./components/Navbar";
 import Post from "./components/Post";
 import EventsSection from "./components/EventsSection";
 import SmallProfile from "./components/SmallProfile";
+import LoadingPage from "./components/LoadingPage";
 
 export default function Home() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState('');
+  const [posts, setPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(true);
 
   // Get token from localStorage
   useEffect(() => {
     const st = localStorage.getItem("accToken");
     setToken(st);
   }, []);
+
+  // Fetch top 10 posts
+  useEffect(() => {
+    const fetchFeed = async () => {
+      if (!token) return;
+      
+      setPostsLoading(true);
+      try {
+        const response = await fetch(`http://localhost:8080/posts/getTop10Posts`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Posts data:', data);
+          setPosts(data);
+        } else {
+          console.error('Failed to fetch posts:', response.status);
+          toast.error('Failed to load posts');
+        }
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+        toast.error('Error connecting to server');
+      } finally {
+        setPostsLoading(false);
+      }
+    };
+
+    if (token) {
+      fetchFeed();
+    }
+  }, [token]);
 
   // Fetch profile data
   const fetchProfile = async () => {
@@ -71,6 +110,16 @@ export default function Home() {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(getFullName())}&background=3B82F6&color=ffffff&size=200`;
   };
 
+  // Format date for posts
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   const exampleEvents = [
     {
       eventTitle: 'Tech Innovators Meetup 2025',
@@ -99,69 +148,12 @@ export default function Home() {
     },
   ];
 
-  const samplePosts = [
-    {
-      title: "Introducing Our New Feature",
-      author: "Jane Doe",
-      date: "2025-10-11",
-      imageUrl: "/images/feature.png",
-      content: "We're excited to announce our latest feature that will revolutionize how you connect with your community. This new tool allows for seamless collaboration and enhanced user experience."
-    },
-    {
-      title: "10 Tips for Better Code Reviews",
-      author: "Alex Johnson",
-      date: "2025-10-10",
-      imageUrl: "https://via.placeholder.com/400x250?text=Code+Review",
-      content: "Code reviews are essential for maintaining code quality. Here are my top 10 tips: 1) Be constructive, not destructive 2) Focus on the code, not the person 3) Explain the 'why' behind your suggestions 4) Use automated tools when possible 5) Keep reviews small and focused..."
-    },
-    {
-      title: "My Journey Learning Machine Learning",
-      author: "Sarah Chen",
-      date: "2025-10-09",
-      imageUrl: "https://via.placeholder.com/400x250?text=ML+Journey",
-      content: "Six months ago, I decided to dive into machine learning. It's been an incredible journey filled with challenges and breakthroughs. From understanding basic algorithms to building my first neural network, here's what I've learned along the way."
-    },
-    {
-      title: "Remote Work Best Practices",
-      author: "Mike Rodriguez",
-      date: "2025-10-08",
-      imageUrl: null,
-      content: "Working remotely has become the new normal for many of us. After 3 years of remote work, I've discovered some practices that have significantly improved my productivity and work-life balance. Communication is key, setting boundaries is crucial, and having a dedicated workspace makes all the difference."
-    },
-    {
-      title: "Building Scalable APIs with Node.js",
-      author: "Emily Thompson",
-      date: "2025-10-07",
-      imageUrl: "https://via.placeholder.com/400x250?text=Node.js+API",
-      content: "Scalability is crucial when building modern applications. In this post, I'll share my experience building APIs that can handle millions of requests. We'll cover caching strategies, database optimization, and microservices architecture."
-    },
-    {
-      title: "CSS Grid vs Flexbox: When to Use What",
-      author: "David Park",
-      date: "2025-10-06",
-      imageUrl: "https://via.placeholder.com/400x250?text=CSS+Layout",
-      content: "Both CSS Grid and Flexbox are powerful layout tools, but they serve different purposes. Grid is perfect for two-dimensional layouts, while Flexbox excels in one-dimensional arrangements. Let me break down when to use each one with practical examples."
-    },
-    {
-      title: "My First Open Source Contribution",
-      author: "Lisa Wang",
-      date: "2025-10-05",
-      imageUrl: null,
-      content: "Contributing to open source seemed intimidating at first, but it turned out to be one of the most rewarding experiences in my development journey. Here's how I found my first project, overcame imposter syndrome, and made my first meaningful contribution to the community."
-    },
-    {
-      title: "Database Design Principles for Beginners",
-      author: "Robert Kim",
-      date: "2025-10-04",
-      imageUrl: "https://via.placeholder.com/400x250?text=Database+Design",
-      content: "Good database design is the foundation of any successful application. Whether you're working with SQL or NoSQL databases, these fundamental principles will help you create efficient, maintainable, and scalable data structures."
-    }
-  ];
+  if (!profile) return <LoadingPage />;
 
   return (
     <div>
-<Navbar profilePic={getProfileImage()} />
-<main className="flex px-8 justify-between gap-5 mt-6">
+      <Navbar profilePic={getProfileImage()} follow_req={profile?.follow_req || []} />
+      <main className="flex px-8 justify-between gap-5 mt-6">
         <div className="flex-col max-w-80">
           <h2 className="px-1 text-lg font-bold">Profile</h2>
           <Link href="../userprofile">
@@ -207,16 +199,46 @@ export default function Home() {
         <div className="flex-col max-w-2xl">
           <h2 className="px-1 text-lg font-bold mb-4">Feed</h2>
           <div className="space-y-6">
-            {samplePosts.map((post, index) => (
-              <Post 
-                key={index}
-                title={post.title}
-                author={post.author}
-                date={post.date}
-                imageUrl={post.imageUrl}
-                content={post.content}
-              />
-            ))}
+            {postsLoading ? (
+              // Loading skeleton for posts
+              [...Array(3)].map((_, index) => (
+                <div key={index} className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 animate-pulse">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <div className="w-12 h-12 bg-gray-300 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                      <div className="h-3 bg-gray-300 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="h-4 bg-gray-300 rounded"></div>
+                    <div className="h-4 bg-gray-300 rounded"></div>
+                    <div className="h-32 bg-gray-300 rounded"></div>
+                  </div>
+                </div>
+              ))
+            ) : posts.length > 0 ? (
+              posts.map((post) => (
+                <Post 
+                  key={post.id}
+                  title={post.title}
+                  author={post.createdByUser}
+                  date={formatDate(post.createdAt)}
+                  imageUrl={post.imageUrl}
+                  content={post.description}
+                />
+              ))
+            ) : (
+              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200 text-center">
+                <div className="text-gray-500 mb-4">
+                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  </svg>
+                  <p className="text-lg font-medium text-gray-900">No posts yet</p>
+                  <p className="text-sm">Be the first to share something with the community!</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         

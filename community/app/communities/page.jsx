@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import Navbar from '../components/Navbar';
+import LoadingPage from '../components/LoadingPage';
 // Community Card Component
 function CommunityCard({ community, onClick }) {
   const router = useRouter();
@@ -486,7 +487,9 @@ export default function CommunityDashboard() {
       setError('Authentication token not found. Please login again.');
     }
   };
-
+  if(loading) return (
+    <LoadingPage/>
+  )
   return (
     <div className="min-h-screen bg-white">
       {/* Header Section */}

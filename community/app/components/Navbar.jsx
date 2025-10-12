@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
 
-const Navbar = ({ profilePic, username, firstName, lastName }) => {
+const Navbar = ({ follow_req = [] }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -11,23 +11,78 @@ const Navbar = ({ profilePic, username, firstName, lastName }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [token, setToken] = useState('');
+  const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   const dropdownRef = useRef(null);
   const notificationRef = useRef(null);
   const profileRef = useRef(null);
 
-  // Generate initials from firstName and lastName
+  // Get token from localStorage
+  useEffect(() => {
+    const st = localStorage.getItem("accToken");
+    if (st) setToken(st);
+  }, []);
+
+  // Fetch profile data
+  const fetchProfile = async () => {
+    if (!token) return;
+    
+    setProfileLoading(true);
+    try {
+      const response = await fetch('http://localhost:8080/user/getProfile', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('Profile data:', userData);
+        setProfile(userData);
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to fetch profile:', response.status, errorText);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  // Fetch profile when token is available
+  useEffect(() => {
+    if (token) {
+      fetchProfile();
+    }
+  }, [token]);
+
+  // Generate initials - use both props and profile data
   const getInitials = () => {
+    // Use profile data first, then fall back to props
+    const firstName = profile?.firstName ;
+    const lastName = profile?.lastName ;
+    const username = profile?.username ;
+    
     if (firstName && lastName) {
       return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
     } else if (username) {
       return username.slice(0, 2).toUpperCase();
     }
-    return 'YV'; // Default fallback
+    return ''; // Default fallback
   };
-
-  // Get display name
+  
+  // Get display name - use both props and profile data
   const getDisplayName = () => {
+    // Use profile data first, then fall back to props
+    const firstName = profile?.firstName || firstName;
+    const lastName = profile?.lastName || lastName;
+    const username = profile?.username || username;
+    
     if (firstName && lastName) {
       return `${firstName} ${lastName}`;
     } else if (username) {
@@ -35,46 +90,44 @@ const Navbar = ({ profilePic, username, firstName, lastName }) => {
     }
     return 'User';
   };
-  
-  // Sample notification data
-  const sampleNotifications = [
-    {
-      id: 1,
-      type: "like",
-      message: "Sarah liked your post",
-      time: "2 minutes ago",
-      read: false,
-      avatar: "/assets/sarah-avatar.jpg"
-    },
-    {
-      id: 2,
-      type: "comment",
-      message: "Mike commented on your post",
-      time: "1 hour ago",
-      read: false,
-      avatar: "/assets/mike-avatar.jpg"
-    },
-    {
-      id: 3,
-      type: "follow",
-      message: "Emma started following you",
-      time: "3 hours ago",
-      read: true,
-      avatar: "/assets/emma-avatar.jpg"
-    },
-    {
-      id: 4,
-      type: "event",
-      message: "New event in Tech Community",
-      time: "1 day ago",
-      read: true,
-      avatar: "/assets/tech-community.jpg"
-    }
-  ];
 
+  // Get profile pic - use both props and profile data
+  const getProfilePic = () => {
+    return profile?.profilePic  || null;
+  };
+
+  // Get username - use both props and profile data
+  const getUsername = () => {
+    return profile?.username || username || 'user';
+  };
+
+  // Create notifications from follow_req (use profile data or props)
   useEffect(() => {
-    setNotifications(sampleNotifications);
-  }, []);
+    const requestsArray = follow_req.length > 0 
+      ? follow_req 
+      : (profile?.recievedRequest || []);
+    
+    const followRequestNotifications = (Array.isArray(requestsArray) && requestsArray.length > 0)
+      ? requestsArray.map((username, idx) => ({
+          id: `follow_req_${idx}`,
+          type: 'follow_request',
+          message: `${username} sent you a follow request`,
+          time: 'Just now',
+          read: false,
+          avatar: null
+        }))
+      : [];
+  
+    setNotifications(prevNotifications => {
+      // Compare old and new notification arrays shallowly by length or ids
+      if (prevNotifications.length === followRequestNotifications.length &&
+         prevNotifications.every((notif, i) => notif.id === followRequestNotifications[i]?.id)) {
+        // No change, do not update state to avoid rerender loop
+        return prevNotifications;
+      }
+      return followRequestNotifications;
+    });
+  }, [follow_req, profile?.recievedRequest]);
 
   // Debounced API search
   useEffect(() => {
@@ -96,7 +149,7 @@ const Navbar = ({ profilePic, username, firstName, lastName }) => {
       if (!res.ok) throw new Error('Search failed');
       const data = await res.json();
       setResults(data);
-      console.log(data)
+      console.log(data);
     } catch (err) {
       console.error(err);
       setResults([]);
@@ -107,7 +160,6 @@ const Navbar = ({ profilePic, username, firstName, lastName }) => {
 
   // Handle create post
   const handleCreatePost = async () => {
-    // This would trigger the create post section in main body
     const event = new CustomEvent('openCreatePost');
     window.dispatchEvent(event);
   };
@@ -131,6 +183,72 @@ const Navbar = ({ profilePic, username, firstName, lastName }) => {
         notif.id === notificationId ? { ...notif, read: true } : notif
       )
     );
+  };
+
+  // Handle Accept Follow Request
+  const handleAcceptFollowRequest = async (notificationId, username) => {
+    try {
+      const response = await fetch(`http://localhost:8080/follow/accept`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username: username
+        })
+      });
+
+      const data = await response.text();
+      console.log(data);
+
+      if (response.ok) {
+        // Remove the notification from the list only if request succeeded
+        setNotifications(prev => 
+          prev.filter(notif => notif.id !== notificationId)
+        );
+        console.log(`Accepted follow request from ${username}`);
+        // Refresh profile to update received requests
+        if (profile) {
+          fetchProfile();
+        }
+      }
+    } catch (error) {
+      console.error('Error accepting follow request:', error);
+    }
+  };
+
+  // Handle Decline Follow Request
+  const handleDeclineFollowRequest = async (notificationId, username) => {
+    try {
+      const response = await fetch(`http://localhost:8080/follow/decline`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username: username
+        })
+      });
+
+      const data = await response.text();
+      console.log(data);
+
+      if (response.ok) {
+        // Remove the notification from the list only if request succeeded
+        setNotifications(prev => 
+          prev.filter(notif => notif.id !== notificationId)
+        );
+        console.log(`Declined follow request from ${username}`);
+        // Refresh profile to update received requests
+        if (profile) {
+          fetchProfile();
+        }
+      }
+    } catch (error) {
+      console.error('Error declining follow request:', error);
+    }
   };
 
   // Handle logout
@@ -190,14 +308,14 @@ const Navbar = ({ profilePic, username, firstName, lastName }) => {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1111.25 4.5a7.5 7.5 0 015.4 12.15z"
+              d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1111.25 4.5a7.5 7.5 0 515.4 12.15z"
             />
           </svg>
 
           {query && (
             <div className="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg mt-2 w-full max-h-64 overflow-y-auto">
               {loading ? (
-                <p  className="px-4 py-3 text-gray-500 text-sm">Searching...</p>
+                <p className="px-4 py-3 text-gray-500 text-sm">Searching...</p>
               ) : results.length > 0 ? (
                 results.map((user) => (
                   <Link
@@ -306,11 +424,20 @@ const Navbar = ({ profilePic, username, firstName, lastName }) => {
                           onClick={() => markAsRead(notification.id)}
                         >
                           <div className="flex items-center gap-3">
-                            <img
-                              src={notification.avatar || '/assets/default-avatar.png'}
-                              alt="Avatar"
-                              className="w-10 h-10 rounded-full object-cover"
-                            />
+                            {notification.avatar ? (
+                              <img
+                                src={notification.avatar}
+                                alt="Avatar"
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
+                                {notification.type === 'follow_request' 
+                                  ? notification.message.split(' ')[0].slice(0, 2).toUpperCase()
+                                  : 'U'
+                                }
+                              </div>
+                            )}
                             <div className="flex-1">
                               <p className="text-sm text-gray-800">{notification.message}</p>
                               <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
@@ -319,6 +446,32 @@ const Navbar = ({ profilePic, username, firstName, lastName }) => {
                               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                             )}
                           </div>
+                          
+                          {/* Show Accept/Decline buttons for follow requests */}
+                          {notification.type === 'follow_request' && (
+                            <div className="flex gap-2 mt-3 ml-13">
+                              <button 
+                                className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const username = notification.message.split(' ')[0];
+                                  handleAcceptFollowRequest(notification.id, username);
+                                }}
+                              >
+                                Accept
+                              </button>
+                              <button 
+                                className="px-3 py-1 bg-gray-300 text-gray-700 text-xs rounded-lg hover:bg-gray-400 transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const username = notification.message.split(' ')[0];
+                                  handleDeclineFollowRequest(notification.id, username);
+                                }}
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          )}
                         </div>
                       ))
                     ) : (
@@ -339,14 +492,6 @@ const Navbar = ({ profilePic, username, firstName, lastName }) => {
                         <p className="text-gray-500 text-sm">No notifications yet</p>
                       </div>
                     )}
-                  </div>
-                  <div className="p-3 border-t border-gray-200">
-                    <Link
-                      href="/notifications"
-                      className="block text-center text-blue-600 hover:text-blue-700 text-sm font-medium"
-                    >
-                      View All Notifications
-                    </Link>
                   </div>
                 </div>
               )}
@@ -380,9 +525,9 @@ const Navbar = ({ profilePic, username, firstName, lastName }) => {
                 onClick={toggleProfile}
                 className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition-colors"
               >
-                {profilePic ? (
+                {getProfilePic() ? (
                   <img
-                    src={profilePic}
+                    src={getProfilePic()}
                     alt={getDisplayName()}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -392,7 +537,7 @@ const Navbar = ({ profilePic, username, firstName, lastName }) => {
                   />
                 ) : null}
                 <div 
-                  className={`w-full h-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm ${profilePic ? 'hidden' : 'flex'}`}
+                  className={`w-full h-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm ${getProfilePic() ? 'hidden' : 'flex'}`}
                 >
                   {getInitials()}
                 </div>
@@ -414,9 +559,9 @@ const Navbar = ({ profilePic, username, firstName, lastName }) => {
           <div className="absolute right-0 top-0 h-full w-80 bg-white shadow-xl">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center gap-4">
-                {profilePic ? (
+                {getProfilePic() ? (
                   <img
-                    src={profilePic}
+                    src={getProfilePic()}
                     alt={getDisplayName()}
                     className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
                     onError={(e) => {
@@ -424,17 +569,16 @@ const Navbar = ({ profilePic, username, firstName, lastName }) => {
                       e.target.nextSibling.style.display = 'flex';
                     }}
                   />
-                ) : null}
-                <div 
-                  className={`w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-xl border-2 border-gray-200 ${profilePic ? 'hidden' : 'flex'}`}
-                >
-                  {getInitials()}
-                </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-xl border-2 border-gray-200">
+                    {getInitials()}
+                  </div>
+                )}
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800">
                     {getDisplayName()}
                   </h3>
-                  <p className="text-sm text-gray-500">@{username || 'user'}</p>
+                  <p className="text-sm text-gray-500">@{getUsername()}</p>
                 </div>
               </div>
             </div>
