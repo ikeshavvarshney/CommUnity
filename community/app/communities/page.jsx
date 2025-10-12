@@ -452,9 +452,7 @@ export default function CommunityDashboard() {
         console.log(communitiesArray);
         setCommunities(communitiesArray);
         
-        if (communitiesArray.length > 0) {
-          toast.success(`Fetched ${communitiesArray.length} communities successfully!`);
-        }
+
 
       } catch (error) {
         console.error('Error fetching communities:', error);
