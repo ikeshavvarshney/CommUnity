@@ -335,7 +335,7 @@ const ContactPage = () => {
       {/* Footer */}
       <footer className="bg-white text-center py-6 border-t border-gray-200">
         <p className="italic text-gray-600 max-w-xl mx-auto">
-          &quot;The best way to find yourself is to lose yourself in the service of others.&quot; — Mahatma Gandhi
+          &quot;The best way to find yourself is to lose yourself in the service of others.&quot;
         </p>
         <p className="mt-4 text-sm text-gray-500">© 2025 Dev Community. All rights reserved.</p>
       </footer>
