@@ -689,6 +689,35 @@ function CreatePostModal({ isOpen, onClose, onSubmit }) {
               )}
             </button>
           </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-6 py-3 border-2 rounded-xl font-medium transition-colors"
+              style={{
+                borderColor: customColors.quaternary,
+                color: customColors.secondary,
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 px-6 py-3 rounded-xl font-medium text-white transition-colors disabled:opacity-50"
+              style={{ backgroundColor: customColors.primary }}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Creating...
+                </div>
+              ) : (
+                'Create Event'
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>
