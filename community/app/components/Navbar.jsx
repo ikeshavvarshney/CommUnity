@@ -406,7 +406,7 @@ const Navbar = () => {
                 </li>
                 <li>
                   <Link
-                    href="/messages"
+                    href={`/messages`}
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
