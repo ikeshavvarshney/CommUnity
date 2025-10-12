@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-toastify';
 
 // Custom color classes based on your color grading
@@ -154,8 +154,15 @@ function CreatePostModal({ isOpen, onClose, onSubmit }) {
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [token, setToken] = useState('');
+  const { id } = useParams();
+   useEffect(()=>{
+    const st=localStorage.getItem("accToken")
+    setToken(st)
+   })
 
-  const handleImageChange = (e) => {
+
+   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setImage(file);
@@ -163,39 +170,81 @@ function CreatePostModal({ isOpen, onClose, onSubmit }) {
     }
   };
 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
       toast.error('Please fill in all required fields');
       return;
     }
-
+  
     setIsSubmitting(true);
+    let imageUrl = null;
+  
     try {
-      const postData = {
-        title: title.trim(),
-        description: hashtags.trim() ? `${hashtags.trim()}\n\n${description.trim()}` : description.trim(),
-        imageUrl: imagePreview,
-        author: 'CurrentUser',
-        votes: 0,
-        likes: 0,
-        comments: 0,
-        createdAt: new Date().toLocaleString(),
-        id: Date.now()
-      };
-      
-      await onSubmit(postData);
-      
-      // Reset form
-      setTitle('');
-      setDescription('');
-      setHashtags('');
-      setImage(null);
-      setImagePreview(null);
-      onClose();
-      toast.success('Post created successfully!');
+      // Step 1: Upload image to cloud if provided
+      if (image && token) {
+        const formData = new FormData();
+        formData.append('file', image); // Fixed: was using 'photo' instead of 'image'
+  
+        const uploadResponse = await fetch(`http://localhost:8080/cloud/uploadFile`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+  
+        if (!uploadResponse.ok) {
+          throw new Error(`Upload failed: ${uploadResponse.status}`);
+        }
+  
+        const uploadResult = await uploadResponse.json();
+        imageUrl = uploadResult.url || uploadResult; // Adjust based on your API response structure
+        console.log('Image uploaded:', imageUrl);
+      }
+  
+      // Step 2: Create post with image URL
+      if (token) {
+        const postResponse = await fetch(`http://localhost:8080/posts/createPost`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            title: title.trim(),
+            description: hashtags.trim() ? `${hashtags.trim()}\n\n${description.trim()}` : description.trim(),
+            imageurl: imageUrl, // Use the uploaded image URL
+            communityId: id
+          })
+        });
+        const postData = await postResponse.text();
+
+        if (!postResponse.ok) {
+          const errorData = postData
+          throw new Error(errorData.message || 'Failed to create post');
+        }
+  
+        console.log('Post created:', postData);
+        
+        // Reset form
+        setTitle('');
+        setDescription('');
+        setHashtags('');
+        setImage(null);
+        setImagePreview(null);
+
+        
+        onClose();
+        toast.success('Post created successfully!');
+      } else {
+        throw new Error('No authentication token found');
+      }
+  
     } catch (error) {
-      toast.error('Failed to create post');
+      console.error('Error creating post:', error);
+      toast.error(error.message || 'Failed to create post');
     } finally {
       setIsSubmitting(false);
     }
@@ -221,142 +270,166 @@ function CreatePostModal({ isOpen, onClose, onSubmit }) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Title Input */}
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{color: customColors.primary}}>
-              Post Title *
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all"
-              style={{
-                borderColor: customColors.quaternary,
-                focusBorderColor: customColors.secondary
-              }}
-              placeholder="Enter an engaging title for your post..."
-              required
-            />
-          </div>
+  {/* Title Input */}
+  <div>
+    <label className="block text-sm font-medium mb-2" style={{ color: customColors.primary }}>
+      Post Title *
+    </label>
+    <input
+      type="text"
+      value={title}
+      onChange={(e) => setTitle(e.target.value)}
+      className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all"
+      style={{
+        borderColor: customColors.quaternary,
+        focusBorderColor: customColors.secondary,
+      }}
+      placeholder="Enter an engaging title for your post..."
+      required
+    />
+  </div>
 
-          {/* Hashtags Input */}
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{color: customColors.primary}}>
-              Hashtags
-            </label>
-            <input
-              type="text"
-              value={hashtags}
-              onChange={(e) => setHashtags(e.target.value)}
-              className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all"
-              style={{
-                borderColor: customColors.quaternary,
-                focusBorderColor: customColors.secondary
-              }}
-              placeholder="#react #javascript #webdev"
-            />
-          </div>
+  {/* Hashtags Input */}
+  <div>
+    <label className="block text-sm font-medium mb-2" style={{ color: customColors.primary }}>
+      Hashtags
+    </label>
+    <input
+      type="text"
+      value={hashtags}
+      onChange={(e) => setHashtags(e.target.value)}
+      className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all"
+      style={{
+        borderColor: customColors.quaternary,
+        focusBorderColor: customColors.secondary,
+      }}
+      placeholder="#react #javascript #webdev"
+    />
+  </div>
 
-          {/* Description Textarea */}
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{color: customColors.primary}}>
-              Description *
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={6}
-              className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all resize-none"
-              style={{
-                borderColor: customColors.quaternary,
-                focusBorderColor: customColors.secondary
-              }}
-              placeholder="Share your thoughts, insights, or questions with the community..."
-              required
-            />
-          </div>
+  {/* Description Textarea */}
+  <div>
+    <label className="block text-sm font-medium mb-2" style={{ color: customColors.primary }}>
+      Description *
+    </label>
+    <textarea
+      value={description}
+      onChange={(e) => setDescription(e.target.value)}
+      rows={6}
+      className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all resize-none"
+      style={{
+        borderColor: customColors.quaternary,
+        focusBorderColor: customColors.secondary,
+      }}
+      placeholder="Share your thoughts, insights, or questions with the community..."
+      required
+    />
+  </div>
 
-          {/* Image Upload */}
-          <div>
-            <label className="block text-sm font-medium mb-2" style={{color: customColors.primary}}>
-              Post Image
-            </label>
-            <div className="border-2 border-dashed rounded-xl p-6 text-center transition-colors hover:border-gray-400"
-                 style={{borderColor: customColors.quaternary}}>
-              {imagePreview ? (
-                <div className="relative">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="max-h-64 mx-auto rounded-lg object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setImage(null);
-                      setImagePreview(null);
-                    }}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <svg className="w-12 h-12 mx-auto mb-4" style={{color: customColors.tertiary}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  <p className="mb-2" style={{color: customColors.secondary}}>Click to upload or drag and drop</p>
-                  <p className="text-sm" style={{color: customColors.tertiary}}>PNG, JPG, GIF up to 10MB</p>
-                </>
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-                id="image-upload"
+  {/* Image Upload */}
+  <div>
+    <label className="block text-sm font-medium mb-2" style={{ color: customColors.primary }}>
+      Post Image
+    </label>
+
+    <div
+      className="border-2 border-dashed rounded-xl p-6 text-center transition-colors hover:border-gray-400 relative"
+      style={{ borderColor: customColors.quaternary }}
+    >
+      {imagePreview ? (
+        <div className="relative">
+          <img
+            src={imagePreview}
+            alt="Preview"
+            className="max-h-64 mx-auto rounded-lg object-cover"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setImage(null);
+              setImagePreview(null);
+            }}
+            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
               />
-              <label
-                htmlFor="image-upload"
-                className="absolute inset-0 cursor-pointer"
-              />
-            </div>
-          </div>
+            </svg>
+          </button>
+        </div>
+      ) : (
+        <>
+          <svg
+            className="w-12 h-12 mx-auto mb-4"
+            style={{ color: customColors.tertiary }}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          <p className="mb-2" style={{ color: customColors.secondary }}>
+            Click below to upload or drag and drop
+          </p>
+          <p className="text-sm" style={{ color: customColors.tertiary }}>
+            PNG, JPG, GIF up to 10MB
+          </p>
 
-          {/* Submit Buttons */}
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-3 border-2 rounded-xl font-medium transition-colors"
-              style={{
-                borderColor: customColors.quaternary,
-                color: customColors.secondary
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-6 py-3 rounded-xl font-medium text-white transition-colors disabled:opacity-50"
-              style={{backgroundColor: customColors.primary}}
-            >
-              {isSubmitting ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Creating...
-                </div>
-              ) : (
-                'Create Post'
-              )}
-            </button>
-          </div>
-        </form>
+          {/* ✅ Fixed clickable label */}
+          <label
+            htmlFor="image-upload"
+            className="inline-block mt-4 px-4 py-2 bg-cyan-600 text-white rounded-lg cursor-pointer hover:bg-cyan-700 transition"
+          >
+            Choose Image
+          </label>
+        </>
+      )}
+
+      {/* Hidden File Input */}
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleImageChange}
+        className="hidden"
+        id="image-upload"
+      />
+    </div>
+  </div>
+
+  {/* Submit Buttons */}
+  <div className="flex gap-3 pt-4">
+    <button
+      type="button"
+      onClick={onClose}
+      className="flex-1 px-6 py-3 border-2 rounded-xl font-medium transition-colors"
+      style={{
+        borderColor: customColors.quaternary,
+        color: customColors.secondary,
+      }}
+    >
+      Cancel
+    </button>
+    <button
+      type="submit"
+      disabled={isSubmitting}
+      className="flex-1 px-6 py-3 rounded-xl font-medium text-white transition-colors disabled:opacity-50"
+      style={{ backgroundColor: customColors.primary }}
+    >
+      {isSubmitting ? (
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+          Creating...
+        </div>
+      ) : (
+        'Create Post'
+      )}
+    </button>
+  </div>
+</form>
       </div>
     </div>
   );
