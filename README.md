@@ -57,10 +57,10 @@ The platform aims to make community building **easy, interactive, and inclusive*
 To run this project locally:  
 
 1. **Clone the repository**
-   ```bash
+```bash
    git clone https://github.com/Yash-vs9/CommUnity.git
    cd CommUnity
-   ```
+```
 
 - Install dependencies
 ```bash
