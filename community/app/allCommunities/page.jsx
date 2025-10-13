@@ -385,47 +385,7 @@ export default function PublicCommunitiesPage() {
               </div>
 
               {/* Filters */}
-              <div className="flex flex-wrap gap-3 items-center">
-                {/* Category Filter */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium" style={{color: customColors.secondary}}>
-                    Category:
-                  </span>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all"
-                    style={{
-                      borderColor: customColors.quaternary,
-                      focusBorderColor: customColors.secondary
-                    }}
-                  >
-                    {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Sort Filter */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium" style={{color: customColors.secondary}}>
-                    Sort by:
-                  </span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all"
-                    style={{
-                      borderColor: customColors.quaternary,
-                      focusBorderColor: customColors.secondary
-                    }}
-                  >
-                    {sortOptions.map(option => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              
             </div>
 
             {/* Results Summary */}

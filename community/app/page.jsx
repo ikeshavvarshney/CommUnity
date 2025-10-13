@@ -14,13 +14,31 @@ export default function Home() {
   const [token, setToken] = useState('');
   const [posts, setPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
-
+  const [events,setEvents]=useState([])
   // Get token from localStorage
   useEffect(() => {
     const st = localStorage.getItem("accToken");
     setToken(st);
   }, []);
-
+  useEffect(()=>{
+    const fetchEvents=async()=>{
+      const response=await fetch(`http://localhost:8080/events/latest5Events`,{
+        method:"GET",
+          headers:{
+            Authorization:`Bearer ${token}`,
+            "Content-Type":"application/json"
+          }
+        
+      })
+      const data=await response.json()
+      console.log(data)
+      if(!response.ok){
+        return
+      }
+      setEvents(data)
+    }
+    fetchEvents()
+  },[])
   // Fetch top 10 posts
   useEffect(() => {
     const fetchFeed = async () => {
@@ -158,7 +176,6 @@ export default function Home() {
           <h2 className="px-1 text-lg font-bold">Profile</h2>
           <Link href="../userprofile">
             {loading ? (
-              
               <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 animate-pulse">
                 <div className="flex items-center space-x-4">
                   <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
@@ -244,7 +261,7 @@ export default function Home() {
         
         <div className="flex-col max-w-80">
           <h2 className="px-1 text-lg font-bold">Upcoming Events</h2>
-          <EventsSection events={exampleEvents} />
+          <EventsSection events={events} />
         </div>
       </main>
     </div>

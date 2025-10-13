@@ -48,9 +48,6 @@ function MembersSidebar({ members, communityName }) {
 
       {/* Members List */}
       <div className="max-h-96 overflow-y-auto">
-        {/* Admins */}
-        
-
         {/* Moderators */}
         {groupedMembers.MODERATOR.length > 0 && (
           <div className="p-4 border-t" style={{borderColor: customColors.quaternary}}>
@@ -136,7 +133,7 @@ function MembersSidebar({ members, communityName }) {
   );
 }
 
-// Members Modal Component (keeping the original modal)
+// Members Modal Component
 function MembersModal({ isOpen, onClose, members, communityName }) {
   const getRoleBadgeStyle = (role) => {
     switch (role) {
@@ -271,13 +268,12 @@ function CommentsModal({ isOpen, onClose, post, onRefresh }) {
           "Content-Type": "application/json",
         },
       });
-      const data=await res.json()
-      console.log(data)
+      const data = await res.json();
+      console.log(data);
       if (!res.ok) {
-        console.log(data)
+        console.log(data);
       }
       setComments(data.comments);
-
     } catch (error) {
       console.error('Error fetching comments:', error);
     } finally {
@@ -302,13 +298,13 @@ function CommentsModal({ isOpen, onClose, post, onRefresh }) {
           postId: post.id
         }),
       });
-      const data=await res.text()
+      const data = await res.text();
       if (res.ok) {
         toast.success('Comment added successfully!');
-        console.log(data)
+        console.log(data);
         setNewComment('');
-        await fetchComments(); // Refresh comments
-        onRefresh(); // Refresh posts to update comment count
+        await fetchComments();
+        onRefresh();
       } else {
         throw new Error('Failed to add comment');
       }
@@ -427,11 +423,10 @@ function CreatePostModal({ isOpen, onClose, onSubmit }) {
   const [token, setToken] = useState('');
   const { id } = useParams();
 
-  // Fixed: Added dependency array to prevent infinite re-renders
   useEffect(() => {
     const st = localStorage.getItem("accToken");
     setToken(st);
-  }, []); // Added empty dependency array
+  }, []);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -451,7 +446,7 @@ function CreatePostModal({ isOpen, onClose, onSubmit }) {
     setIsSubmitting(true);
     let imageUrl = null;
   
-    try {
+    try { 
       // Step 1: Upload image to cloud if provided
       if (image && token) {
         const formData = new FormData();
@@ -503,7 +498,7 @@ function CreatePostModal({ isOpen, onClose, onSubmit }) {
         setImagePreview(null);
         
         onClose();
-        onSubmit(); // Call refresh function
+        onSubmit();
         toast.success('Post created successfully!');
       } else {
         throw new Error('No authentication token found');
@@ -689,7 +684,202 @@ function CreatePostModal({ isOpen, onClose, onSubmit }) {
               )}
             </button>
           </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
+// Create Event Modal Component
+function CreateEventModal({ isOpen, onClose, onSubmit }) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [hashtags, setHashtags] = useState('');
+  const [eventDate, setEventDate] = useState('');
+  const [person,setPerson]=useState('')
+  const [eventTime, setEventTime] = useState('');
+  const [location, setLocation] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [token, setToken] = useState('');
+  const { id } = useParams();
+
+  useEffect(() => {
+    const st = localStorage.getItem("accToken");
+    setToken(st);
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!title.trim() || !description.trim()  || !person || !location.trim() || !id) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+    
+      if (token) {
+        const eventDateTime = `${eventDate}T${eventTime}`;
+        
+        const eventResponse = await fetch(`http://localhost:8080/events/createEvent`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            title: title.trim(),
+            description: hashtags.trim() ? `${hashtags.trim()}\n\n${description.trim()}` : description.trim(),
+            hostedBy: person,
+            location: location.trim(),
+            communityId: id
+          })
+        });
+        
+        const eventData = await eventResponse.text();
+        console.log(eventData)
+        if (!eventResponse.ok) {
+          throw new Error(eventData || 'Failed to create event');
+        }
+
+        // Reset form
+        setTitle('');
+        setDescription('');
+        setHashtags('');
+        setEventDate('');
+        setEventTime('');
+        setLocation('');
+        
+        onClose();
+        onSubmit();
+        toast.success('Event created successfully!');
+      } else {
+        throw new Error('No authentication token found');
+      }
+
+    } catch (error) {
+      console.error('Error creating event:', error);
+      toast.error(error.message || 'Failed to create event');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div style={{backgroundColor: customColors.primary}} className="px-6 py-4 rounded-t-2xl">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white">Create New Event</h2>
+            <button
+              onClick={onClose}
+              className="text-white hover:text-gray-200 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Event Title Input */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: customColors.primary }}>
+              Event Title *
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all"
+              style={{
+                borderColor: customColors.quaternary,
+                focusBorderColor: customColors.secondary,
+              }}
+              placeholder="Enter the event name..."
+              required
+            />
+          </div>
+
+         
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: customColors.primary }}>
+              Hosted By
+            </label>
+            <input
+              type="text"
+              value={person}
+              onChange={(e) => setPerson(e.target.value)}
+              className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all"
+              style={{
+                borderColor: customColors.quaternary,
+                focusBorderColor: customColors.secondary,
+              }}
+              placeholder="Enter Name..."
+              required
+            />
+          </div>
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: customColors.primary }}>
+              Location *
+            </label>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all"
+              style={{
+                borderColor: customColors.quaternary,
+                focusBorderColor: customColors.secondary,
+              }}
+              placeholder="Enter event location or venue..."
+              required
+            />
+          </div>
+
+          {/* Hashtags Input */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: customColors.primary }}>
+              Hashtags
+            </label>
+            <input
+              type="text"
+              value={hashtags}
+              onChange={(e) => setHashtags(e.target.value)}
+              className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all"
+              style={{
+                borderColor: customColors.quaternary,
+                focusBorderColor: customColors.secondary,
+              }}
+              placeholder="#event #community #meetup"
+            />
+          </div>
+
+          {/* Description Textarea */}
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: customColors.primary }}>
+              Event Description *
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={6}
+              className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 transition-all resize-none"
+              style={{
+                borderColor: customColors.quaternary,
+                focusBorderColor: customColors.secondary,
+              }}
+              placeholder="Describe your event, what attendees can expect, and any other important details..."
+              required
+            />
+          </div>
+
+          {/* Submit Buttons */}
           <div className="flex gap-3 pt-4">
             <button
               type="button"
@@ -724,7 +914,7 @@ function CreatePostModal({ isOpen, onClose, onSubmit }) {
   );
 }
 
-// Fixed: Simple PostCard component (display only, no data fetching)
+// PostCard component
 function PostCard({ post, onVote, onOpenComments }) {
   const [expandedPostId, setExpandedPostId] = useState(null);
   const [votingPostId, setVotingPostId] = useState(null);
@@ -765,7 +955,7 @@ function PostCard({ post, onVote, onOpenComments }) {
             {post.createdByUser?.[0] || "?"}
           </div>
           <div>
-            <h3 className="font-semibold text-sm">{post.createdByUser || "Unknown User"}</h3>
+
             <p className="text-xs text-gray-500">
               {new Date(post.createdAt).toLocaleDateString()}
             </p>
@@ -838,31 +1028,6 @@ function PostCard({ post, onVote, onOpenComments }) {
           </button>
         </div>
       </div>
-
-      {/* Comments Preview */}
-      {post.comments?.length > 0 && (
-        <div className="px-4 py-3 border-t space-y-2">
-          {post.comments.slice(0, 2).map((comment) => (
-            <div key={comment.id} className="flex items-start space-x-2">
-              <div className="w-6 h-6 rounded-full bg-gray-400 flex items-center justify-center text-white text-xs font-semibold">
-                {comment.commentedByUser?.[0] || "?"}
-              </div>
-              <div className="flex-1">
-                <p className="text-xs font-medium text-gray-800">{comment.commentedByUser || "Unknown User"}</p>
-                <p className="text-xs text-gray-600 line-clamp-2">{comment.text}</p>
-              </div>
-            </div>
-          ))}
-          {post.comments.length > 2 && (
-            <button
-              onClick={() => onOpenComments(post)}
-              className="text-xs font-medium text-blue-600 hover:underline mt-2"
-            >
-              View all {post.comments.length} comments
-            </button>
-          )}
-        </div>
-      )}
     </article>
   );
 }
@@ -874,15 +1039,14 @@ export default function CommunityDetailPage() {
   
   const [community, setCommunity] = useState({});
   const [posts, setPosts] = useState([]);
-  const [activeTab, setActiveTab] = useState('posts');
   const [loading, setLoading] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const [token, setToken] = useState('');
 
-  // Fixed: Single useEffect for token
   useEffect(() => {
     const st = localStorage.getItem("accToken");
     setToken(st);
@@ -894,7 +1058,7 @@ export default function CommunityDetailPage() {
     fetchCommunity();
   }, [id, token]);
 
-  // Fixed: Single useEffect for fetching posts
+  // Fetch posts
   useEffect(() => {
     if (!id || !token) return;
     fetchPosts();
@@ -910,7 +1074,7 @@ export default function CommunityDetailPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        console.log(data)
+        console.log(data);
         setCommunity(data);
       }
     } catch (err) {
@@ -973,9 +1137,9 @@ export default function CommunityDetailPage() {
     }
   };
 
-  // Handle create post
+  // Handle create post/event
   const handleCreatePost = async () => {
-    await fetchPosts(); // Refresh posts after creating
+    await fetchPosts();
   };
 
   // Handle open comments
@@ -1070,10 +1234,24 @@ export default function CommunityDetailPage() {
                 )}
                 <button
                   onClick={() => setShowCreatePost(true)}
-                  className="px-6 py-3 rounded-xl font-medium text-white transition-colors hover:opacity-90"
+                  className="flex items-center px-4 py-2 rounded-lg text-white font-medium transition-colors hover:opacity-90"
                   style={{backgroundColor: customColors.primary}}
                 >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
                   Create Post
+                </button>
+                
+                <button
+                  onClick={() => setShowCreateEvent(true)}
+                  className="flex items-center px-4 py-2 rounded-lg text-white font-medium transition-colors hover:opacity-90"
+                  style={{backgroundColor: customColors.secondary}}
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Create Event
                 </button>
               </div>
             </div>
@@ -1104,13 +1282,22 @@ export default function CommunityDetailPage() {
                   </svg>
                   <h3 className="text-lg font-medium text-gray-600 mb-2">No posts yet</h3>
                   <p className="text-gray-500 mb-4">Be the first to share something with this community!</p>
-                  <button
-                    onClick={() => setShowCreatePost(true)}
-                    className="px-6 py-3 rounded-xl font-medium text-white transition-colors hover:opacity-90"
-                    style={{backgroundColor: customColors.primary}}
-                  >
-                    Create First Post
-                  </button>
+                  <div className="flex justify-center gap-4">
+                    <button
+                      onClick={() => setShowCreatePost(true)}
+                      className="px-6 py-3 rounded-xl font-medium text-white transition-colors hover:opacity-90"
+                      style={{backgroundColor: customColors.primary}}
+                    >
+                      Create First Post
+                    </button>
+                    <button
+                      onClick={() => setShowCreateEvent(true)}
+                      className="px-6 py-3 rounded-xl font-medium text-white transition-colors hover:opacity-90"
+                      style={{backgroundColor: customColors.secondary}}
+                    >
+                      Create First Event
+                    </button>
+                  </div>
                 </div>
               ) : (
                 posts.map(post => (
@@ -1131,6 +1318,13 @@ export default function CommunityDetailPage() {
       <CreatePostModal
         isOpen={showCreatePost}
         onClose={() => setShowCreatePost(false)}
+        onSubmit={handleCreatePost}
+      />
+
+      {/* Create Event Modal */}
+      <CreateEventModal
+        isOpen={showCreateEvent}
+        onClose={() => setShowCreateEvent(false)}
         onSubmit={handleCreatePost}
       />
 

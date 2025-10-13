@@ -145,11 +145,20 @@ const Navbar = ({ follow_req = [] }) => {
   const fetchResults = async (searchTerm) => {
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:8080/user/search?query=${query}`);
+      const res = await fetch(`http://localhost:8080/user/search?query=${searchTerm}`,{
+        method:"GET",
+          headers:{
+            Authorization:`Bearer ${token}`,
+            "Content-Type":"application/json"
+          
+        }
+      });
+      const data=await res.json()
+      console.log(data)
       if (!res.ok) throw new Error('Search failed');
-      const data = await res.json();
+
       setResults(data);
-      console.log(data);
+      console.log(data.username);
     } catch (err) {
       console.error(err);
       setResults([]);
