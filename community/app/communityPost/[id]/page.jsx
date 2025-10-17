@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-toastify';
+import Navbar from '@/app/components/Navbar';
 
 // Custom color classes based on your color grading
 const customColors = {
@@ -1172,6 +1173,7 @@ export default function CommunityDetailPage() {
 
   return (
     <div className="min-h-screen" style={{backgroundColor: customColors.quinary}}>
+      <Navbar />
       {/* Header */}
       <div className="bg-white border-b" style={{borderColor: customColors.quaternary}}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

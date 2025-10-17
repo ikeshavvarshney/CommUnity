@@ -68,7 +68,7 @@ function CommunityCard({ community, onJoin, onVisit, isJoining }) {
       <div className="relative p-6 pb-4">
         <div className="flex items-start space-x-4">
           <img
-            src={community.logoUrl}
+            src={community.logoUrl || null}
             alt={`${community.name} logo`}
             className="w-16 h-16 rounded-xl border-2 object-cover flex-shrink-0"
             style={{borderColor: customColors.quaternary}}

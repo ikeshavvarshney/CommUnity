@@ -1,48 +1,60 @@
 import React from 'react';
 
-const EventCard = ({ eventImage, eventTitle, organizer, dateTime, location, description, attendeesCount }) => {
+const EventCard = ({ title, description, hostedBy, location, communityName, createdAt }) => {
+  // Split hashtags from the rest of the text
+  const hashtags = description?.match(/#[\w]+/g) || [];
+  const cleanDescription = description
+    ?.replace(/#[\w]+/g, '') // remove hashtags
+    .trim();
+
   return (
-    <div style={{
-      border: '1px solid #ddd',
-      borderRadius: '12px',
-      maxWidth: '500px',
-      margin: '20px auto',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      fontFamily: 'Arial, sans-serif',
-      backgroundColor: '#fff',
-      overflow: 'hidden'
-    }}>
-      {eventImage && (
-        <img src={eventImage} alt={eventTitle} style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
-      )}
-      <div style={{ padding: '15px' }}>
-        <h3 style={{ margin: '0 0 8px', fontSize: '1.4rem', color: '#222' }}>{eventTitle}</h3>
-        <p style={{ margin: '0 0 5px', fontWeight: '600', color: '#555' }}>Organized by {organizer}</p>
-        <p style={{ margin: '0 0 10px', color: '#666', fontSize: '0.9rem' }}>
-          <strong>Date & Time:</strong> {dateTime}
-          <br />
-          <strong>Location:</strong> {location}
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden p-6">
+      <div className="flex flex-col space-y-3">
+        {/* Title */}
+        <h3 className="text-2xl font-semibold text-gray-900 tracking-tight">
+          {title}
+        </h3>
+
+        {/* Organizer */}
+        <p className="text-cyan-600 font-medium">
+          Hosted by <span className="text-gray-800">{hostedBy || 'N/A'}</span>
         </p>
-        <p style={{ color: '#444', fontSize: '1rem', marginBottom: '15px', whiteSpace: 'pre-wrap' }}>
-          {description.length > 150 ? description.slice(0, 150) + '...' : description}
-        </p>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          fontSize: '0.9rem',
-          color: '#555'
-        }}>
-          <span>{attendeesCount} attending</span>
-          <button style={{
-            padding: '8px 16px',
-            backgroundColor: '#0073b1',
-            border: 'none',
-            borderRadius: '20px',
-            color: '#fff',
-            fontWeight: 'bold',
-            cursor: 'pointer'
-          }}>
+
+        {/* Meta Info */}
+        <div className="text-sm text-gray-600 space-y-1">
+          <p>
+            <span className="font-semibold text-gray-700">Community:</span>{' '}
+            {communityName}
+          </p>
+          <p>
+            <span className="font-semibold text-gray-700">Date:</span>{' '}
+            {new Date(createdAt).toLocaleDateString()}
+          </p>
+          <p>
+            <span className="font-semibold text-gray-700">Location:</span>{' '}
+            {location}
+          </p>
+        </div>
+
+        {/* Description */}
+        <div className="text-gray-700 leading-relaxed mt-2">
+          {/* Hashtags Line */}
+          {hashtags.length > 0 && (
+            <p className="text-cyan-500 font-medium mb-1">
+              {hashtags.join(' ')}
+            </p>
+          )}
+          {/* Description Text */}
+          <p>
+            {cleanDescription?.length > 150
+              ? cleanDescription.slice(0, 150) + '...'
+              : cleanDescription}
+          </p>
+        </div>
+
+        {/* Button */}
+        <div className="flex justify-end mt-4">
+          <button className="px-5 py-2 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold rounded-full transition-all duration-200 shadow-sm hover:shadow-cyan-500/30">
             RSVP / Join
           </button>
         </div>
