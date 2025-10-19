@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/app/components/Navbar';
 import { useParams } from 'next/navigation';
 import { toast } from 'react-toastify';
+import { useRouter } from 'next/navigation';
 // Sample data
 const samplePosts = [
   {
@@ -182,12 +183,20 @@ const OtherUserProfile = () => {
   const [profile, setProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('posts');
   const [selectedPost, setSelectedPost] = useState(null);
+  const [loginUsername,setLoginUsername]=useState("")
+  const fetchedUsername=(newUsername)=>{
+    setLoginUsername(newUsername);
+    console.log('Received username from Navbar:', newUsername);
 
+  }
+  const router=useRouter()
   useEffect(() => {
     const st = localStorage.getItem("accToken");
     if (st) setToken(st);
   }, []);
-
+  const handleUsername=(name)=>{
+    setLoginUsername(name)
+  }
   useEffect(() => {
     if (!id || !token) return;
 
@@ -257,7 +266,7 @@ const OtherUserProfile = () => {
 
   return (
     <div className="min-h-screen bg-[#d4d8dd] font-sans">
-      <Navbar />
+      <Navbar  fetchingUsername={handleUsername}/>
       <div className="max-w-7xl mx-auto p-6">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Left Panel (35%) */}
@@ -279,6 +288,9 @@ const OtherUserProfile = () => {
                 )}
 <button onClick={()=>handleClick(profile.username)} className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-300">
   Follow
+</button>
+<button onClick={()=>router.push(`/chat/${profile.username}?from=${loginUsername}`)} className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition duration-300">
+  Message
 </button>
 <br />
 <br />

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
 
-const Navbar = ({ follow_req = [] }) => {
+const Navbar = ({ follow_req = [], fetchingUsername }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -43,6 +43,10 @@ const Navbar = ({ follow_req = [] }) => {
         const userData = await response.json();
         console.log('Profile data:', userData);
         setProfile(userData);
+        if (fetchingUsername && userData?.username) {
+          fetchingUsername(userData.username);
+        }
+
       } else {
         const errorText = await response.text();
         console.error('Failed to fetch profile:', response.status, errorText);
@@ -56,10 +60,9 @@ const Navbar = ({ follow_req = [] }) => {
 
   // Fetch profile when token is available
   useEffect(() => {
-    if (token) {
-      fetchProfile();
-    }
-  }, [token]);
+    if(!token) return
+    fetchProfile();
+  }, [token,fetchingUsername]);
 
   // Generate initials - use both props and profile data
   const getInitials = () => {
@@ -79,9 +82,9 @@ const Navbar = ({ follow_req = [] }) => {
   // Get display name - use both props and profile data
   const getDisplayName = () => {
     // Use profile data first, then fall back to props
-    const firstName = profile?.firstName || firstName;
-    const lastName = profile?.lastName || lastName;
-    const username = profile?.username || username;
+    const firstName = profile?.firstName ;
+    const lastName = profile?.lastName ;
+    const username = profile?.username ;
     
     if (firstName && lastName) {
       return `${firstName} ${lastName}`;
@@ -98,7 +101,7 @@ const Navbar = ({ follow_req = [] }) => {
 
   // Get username - use both props and profile data
   const getUsername = () => {
-    return profile?.username || username || 'user';
+    return profile?.username || 'user';
   };
 
   // Create notifications from follow_req (use profile data or props)
@@ -137,7 +140,7 @@ const Navbar = ({ follow_req = [] }) => {
       } else {
         setResults([]);
       }
-    }, 400);
+    }, 1000);
     return () => clearTimeout(delay);
   }, [query]);
 
